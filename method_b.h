@@ -3,7 +3,7 @@
 
 #include "base_module.h"
 
-/* Measure B-method (traditional erase+write flash hotfix). */
+/* 测量 B 方案（传统擦除+写入 flash 热修复） */
 bool measure_method_B(uint32_t page_addr, uint16_t hw, uint32_t N, uint32_t *out_cycles);
 
 #endif /* METHOD_B_H */
