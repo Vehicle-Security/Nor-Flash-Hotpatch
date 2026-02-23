@@ -48,31 +48,12 @@ void fun1(void){
 void fun2(void){
   rtt_puts("this is fun2\n");
 }
-void UsageFault_Handler_C(uint32_t *fault_stack) {
-    uint16_t *pc = (uint16_t *)fault_stack[6];
-    if ((SCB->CFSR & SCB_CFSR_UNDEFINSTR_Msk) != 0) {
-        if (*pc == 0xFFFF) {
-            SCB->CFSR |= SCB_CFSR_UNDEFINSTR_Msk;
-            fault_stack[6] += 2;
-            return;
-        }
-    }
-}
 
-__attribute__((naked)) void UsageFault_Handler(void) {
-    __asm volatile(
-        "tst lr, #4 \n"
-        "ite eq \n"
-        "mrseq r0, msp \n"
-        "mrsne r0, psp \n"
-        "b UsageFault_Handler_C \n"
-    );
-}
 __attribute__((naked, noinline, used, section(".text.hotpatch"), aligned(2)))
 void patch_slot(void) {
     __asm volatile(
         ".thumb                \n"
-        ".hword 0xFFFF         \n"
+        ".hword 0xE7FF         \n"
         "push {lr}             \n"
         "bl   fun1             \n"
         "pop  {pc}             \n"
@@ -90,8 +71,6 @@ static bool encode_thumb(uintptr_t from_halfword_addr, uintptr_t to_func_addr, u
 int main(void) {
   bsp_board_init(BSP_INIT_LEDS);
 
-  SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
-
   SEGGER_RTT_Init();
   SEGGER_RTT_SetFlagsUpBuffer(0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
 
@@ -101,7 +80,7 @@ int main(void) {
   uint16_t b_instr = 0;
   uintptr_t patch_addr = (uintptr_t)patch_slot & ~1u;
   encode_thumb(patch_addr, (uintptr_t)fun2, &b_instr);
-  //开始写操作
+  //开始写操作，打补丁
   uint32_t aligned_addr = patch_addr & ~3u;
   uint32_t old_val = *(volatile uint32_t *)aligned_addr;
   uint32_t new_val;
@@ -109,6 +88,24 @@ int main(void) {
       new_val = (old_val & 0xFFFF0000) | b_instr;
   } else {
       new_val = (old_val & 0x0000FFFF) | ((uint32_t)b_instr << 16);
+  } 
+  NRF_NVMC->CONFIG = 1; 
+  while (NRF_NVMC->READY == 0);
+  *(volatile uint32_t *)aligned_addr = new_val;
+  while (NRF_NVMC->READY == 0);
+  NRF_NVMC->CONFIG = 0; 
+  while (NRF_NVMC->READY == 0);
+  __DSB();
+  __ISB();
+  //测试补丁
+  patch_slot();
+  //开始写操作，卸载补丁
+  old_val = *(volatile uint32_t *)aligned_addr; 
+  uint16_t unpatch_instr = 0x0000;
+  if ((patch_addr & 2) == 0) {
+      new_val = (old_val & 0xFFFF0000) | unpatch_instr;
+  } else {
+      new_val = (old_val & 0x0000FFFF) | ((uint32_t)unpatch_instr << 16);
   }
   NRF_NVMC->CONFIG = 1;
   while (NRF_NVMC->READY == 0);
@@ -117,8 +114,8 @@ int main(void) {
   NRF_NVMC->CONFIG = 0;
   while (NRF_NVMC->READY == 0);
   __DSB();
-  __ISB();
-  //补丁修改完成，开始打补丁
+  __ISB(); 
+  //测试补丁是否卸载
   patch_slot();
   rtt_puts("test end\n");
 }
