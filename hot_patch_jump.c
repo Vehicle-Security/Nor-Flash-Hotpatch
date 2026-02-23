@@ -8,6 +8,7 @@
 // ================= RTT minimal output =================
 static void rtt_putc(char c) { SEGGER_RTT_PutChar(0, c); }
 static void rtt_puts(const char *s) { SEGGER_RTT_WriteString(0, s); }
+static volatile uintptr_t g_patch_resume = 0;
 
 static void rtt_put_u32(uint32_t v) {
   char buf[11];
@@ -45,19 +46,24 @@ int printf(const char *fmt, ...) {
 void fun1(void){
   rtt_puts("this is fun1\n");
 }
-void fun2(void){
-  rtt_puts("this is fun2\n");
-}
 
 __attribute__((naked, noinline, used, section(".text.hotpatch"), aligned(2)))
 void patch_slot(void) {
     __asm volatile(
         ".thumb                \n"
         ".hword 0xE7FF         \n"
+        "nop                   \n"
         "push {lr}             \n"
         "bl   fun1             \n"
         "pop  {pc}             \n"
     );
+}
+
+__attribute__((noinline))void fun2(void){
+  g_patch_resume = (((uintptr_t)patch_slot) & ~(uintptr_t)1u) + 2;
+  rtt_puts("this is fun2\n");
+  void (*resume)(void) = (void (*)(void))(g_patch_resume | 1u);
+  resume();
 }
 static bool encode_thumb(uintptr_t from_halfword_addr, uintptr_t to_func_addr, uint16_t *out_hw)
 {
@@ -101,7 +107,7 @@ int main(void) {
   patch_slot();
   //开始写操作，卸载补丁
   old_val = *(volatile uint32_t *)aligned_addr; 
-  uint16_t unpatch_instr = 0x0000;
+  uint16_t unpatch_instr = 0xE000;
   if ((patch_addr & 2) == 0) {
       new_val = (old_val & 0xFFFF0000) | unpatch_instr;
   } else {
