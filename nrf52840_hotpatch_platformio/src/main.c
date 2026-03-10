@@ -129,14 +129,19 @@ void patch_slot(void) {
     __asm volatile(
         ".thumb                \n"
         ".hword 0xE7FF         \n"
-        "nop                   \n"
-        "push {lr}             \n"
+        "nop                   \n" 
         "bl   fun1             \n"
         "pop  {pc}             \n");
 }
 
 __attribute__((noinline, section(".hotpatch_page"))) void fun2(void) {
     console_puts("this is fun2\r\n");
+
+    uintptr_t resume_addr = (((uintptr_t)patch_slot) & ~(uintptr_t)1u) + 2u;
+    
+    void (*resume)(void) = (void (*)(void))(resume_addr | 1u);
+    
+    resume();
 }
 
 static void run_demo(void) {
@@ -155,7 +160,6 @@ static void run_demo(void) {
 }
 
 static void print_help(void) {
-    // 移除了 reset 指令的提示
     console_puts("commands: help, demo, call, patch, unpatch, status\r\n");
 }
 
