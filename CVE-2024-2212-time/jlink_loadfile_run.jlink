@@ -1,0 +1,4 @@
+loadfile .pio\\build\\nrf52840_dk\\firmware.hex
+r
+g
+q
