@@ -1,0 +1,30 @@
+SEGGER J-Link V9.20 - Real time terminal output
+SEGGER J-Link V9.5, SN=69513693
+Process: JLink.exe
+
+RTT console ready. (Legacy + RapidPatch Compare)
+[init] DWT cycle counter ready.
+commands: help, mode legacy|rapid, demo, bench, compare, call, patch, unpatch, status
+[mode] current scheme: rapid
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+[legacy] patch_slot first halfword: 0xE7FF
+[legacy] mode: original entry (fun1 path)
+rtt> compare
+
+=== Benchmark Compare ===
+
+--- Benchmark [rapid] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 673 cycles
+[bench] patch install: 1759 cycles
+[bench] patched call: 2197 cycles
+[bench] patch uninstall: 2172 cycles
+
+--- Benchmark [legacy] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 577 cycles
+[bench] patch install: 2822 cycles
+[bench] patched call: 163 cycles
+[bench] patch uninstall: 2758 cycles
+rtt> 
+rtt> 

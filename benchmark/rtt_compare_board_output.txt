@@ -1,0 +1,116 @@
+SEGGER J-Link V9.20 - Real time terminal output
+SEGGER J-Link V9.5, SN=69513693
+Process: JLink.exe
+
+RTT console ready. (Legacy + RapidPatch Compare)
+[init] DWT cycle counter ready.
+commands: help, mode legacy|rapid, demo, compare, call, patch, unpatch, status
+[mode] current scheme: rapid
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+[legacy] patch_slot first halfword: 0xE000
+[legacy] mode: unpatched forward jump (fun1 path)
+rtt> status
+[mode] current scheme: rapid
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+[legacy] patch_slot first halfword: 0xE000
+[legacy] mode: unpatched forward jump (fun1 path)
+rtt> 
+rtt> mode rapid
+[mode] current scheme: rapid
+rtt> 
+rtt> compare
+
+=== Compare Mode ===
+
+--- Demo Start [rapid] ---
+[demo] auto input: uxQueueLength=0x40000001, uxItemSize=0x00000004
+1. Initial call (unpatched path, auto-fed triggering values):
+
+=== [RAPIDPATCH] Fixed Patch Point Entry ===
+[DEMO] Auto-fed triggering input values.
+
+=== [RAPIDPATCH] Fixed Patch Point Target ===
+Status: Filter passed. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+[Create result]
+  expected bytes (64-bit) = 0x0000000100000004
+  alloc_size   (32-bit)   = 0x00000004
+
+[Send simulation]
+  writing to logical index = 1
+  guard before           = CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 
+  [!] Logical write exceeds actual allocated buffer.
+  guard after            = A5 A5 A5 A5 CC CC CC CC CC CC CC CC CC CC CC CC 
+  [-] Heap-buffer-overflow effect observed. Guard overwritten!
+
+[*] Vulnerable path finished. Returning to shell...
+
+2. Measuring patch apply...
+[rapid] active=yes install_addr=0x00001F90 code_len=144 bytes
+3. Call after patch (patched path, same auto-fed values):
+
+=== [RAPIDPATCH] Fixed Patch Point Entry ===
+[DEMO] Auto-fed triggering input values.
+
+=== [RAPIDPATCH] Fixed Patch Point Target ===
+Status: Filter passed. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+[Create result]
+  expected bytes (64-bit) = 0x0000000100000004
+  alloc_size   (32-bit)   = 0x00000004
+
+[Send simulation]
+  writing to logical index = 1
+  guard before           = CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 
+  [!] Logical write exceeds actual allocated buffer.
+  guard after            = A5 A5 A5 A5 CC CC CC CC CC CC CC CC CC CC CC CC 
+  [-] Heap-buffer-overflow effect observed. Guard overwritten!
+
+[*] Vulnerable path finished. Returning to shell...
+
+4. Measuring patch uninstall...
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+5. Call after unpatch (unpatched path again, same auto-fed values):
+
+=== [RAPIDPATCH] Fixed Patch Point Entry ===
+[DEMO] Auto-fed triggering input values.
+
+=== [RAPIDPATCH] Fixed Patch Point Target ===
+Status: Filter passed. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+[Create result]
+  expected bytes (64-bit) = 0x0000000100000004
+  alloc_size   (32-bit)   = 0x00000004
+
+[Send simulation]
+  writing to logical index = 1
+  guard before           = CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 
+  [!] Logical write exceeds actual allocated buffer.
+  guard after            = A5 A5 A5 A5 CC CC CC CC CC CC CC CC CC CC CC CC 
+  [-] Heap-buffer-overflow effect observed. Guard overwritten!
+
+[*] Vulnerable path finished. Returning to shell...
+
+--- Demo Summary [rapid] ---
+auto input used       : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] initial call: 490401 cycles
+[bench] patch apply: 1773 cycles
+[bench] patched call: 479254 cycles
+[bench] patch uninstall: 2173 cycles
+[bench] final call: 596630 cycles
+--- Demo End [rapid] ---
+[-] legacy demo requires a pristine state. Reflash/reset before rerunning it.
+rtt> 
+rtt> 

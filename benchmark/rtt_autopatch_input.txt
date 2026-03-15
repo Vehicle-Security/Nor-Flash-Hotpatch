@@ -1,0 +1,4 @@
+status
+demo autopatch
+bench autopatch
+compare

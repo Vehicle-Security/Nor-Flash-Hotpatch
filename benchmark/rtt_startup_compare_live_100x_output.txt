@@ -1,0 +1,137 @@
+###RTT Client: ************************************************************ 
+###RTT Client: *               SEGGER Microcontroller GmbH                * 
+###RTT Client: *   Solutions for real time microcontroller applications   * 
+###RTT Client: ************************************************************ 
+###RTT Client: *                                                          * 
+###RTT Client: *       (c) 2012 - 2016  SEGGER Microcontroller GmbH       * 
+###RTT Client: *                                                          * 
+###RTT Client: *     www.segger.com     Support: support@segger.com       * 
+###RTT Client: *                                                          * 
+###RTT Client: ************************************************************ 
+###RTT Client: *                                                          * 
+###RTT Client: * SEGGER J-Link RTT Client   Compiled Feb 19 2026 11:34:51 * 
+###RTT Client: *                                                          * 
+###RTT Client: ************************************************************ 
+
+###RTT Client: -----------------------------------------------
+###RTT Client: Connecting to J-Link RTT Server via localhost:19021 ...
+###RTT Client: Connected.
+
+SEGGER J-Link V9.20 - Real time terminal output
+SEGGER J-Link V9.5, SN=69513693
+Process: JLink.exe
+
+RTT console ready. (Fair Hotpatch Benchmark)
+[init] DWT cycle counter ready.
+commands: help, mode legacy|rapid|hera|autopatch, demo, bench, compare, call, patch, unpatch, status
+[mode] current scheme: rapid
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+[hera] active=no payload_addr=0x00000000
+[legacy] patch_slot first halfword: 0xE7FF
+[legacy] mode: original entry (fun1 path)
+[autopatch] linked=yes ready=yes enabled=no entry=0x00000C4C online_toggle=soft-switch
+
+=== Startup Smoke Test ===
+
+--- Demo Start [autopatch] ---
+[demo] unified attack input: uxQueueLength=0x40000001, uxItemSize=0x00000004
+1. Initial call (baseline vulnerable path):
+[DEMO] Auto-fed triggering input values.
+
+=== [AUTOPATCH] Queue Target (Disabled) ===
+Status: Generated filter is present but disabled. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+=== [AUTOPATCH] Queue Target (Disabled) ===
+Status: Generated filter is present but disabled. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+[Create result]
+  expected bytes (64-bit) = 0x0000000100000004
+  alloc_size   (32-bit)   = 0x00000004
+
+[Send simulation]
+  writing to logical index = 1
+  guard before           = CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 
+  [!] Logical write exceeds actual allocated buffer.
+  guard after            = A5 A5 A5 A5 CC CC CC CC CC CC CC CC CC CC CC CC 
+  [-] Heap-buffer-overflow effect observed. Guard overwritten!
+[result] baseline ret=-30 (overflow) fixed=no
+
+2. Applying patch...
+[autopatch] linked=yes ready=yes enabled=yes entry=0x00000C4C online_toggle=soft-switch
+3. Call after patch (same attack input):
+[DEMO] Auto-fed triggering input values.
+
+=== [AUTOPATCH] Queue Target (Enabled) ===
+Status: Calling the offline-compiled AutoPatch queue filter.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+[Filter]
+  op       = 1
+  ret_code = -3
+[AUTOPATCH] Generated filter blocked the queue integer overflow before allocation!
+[AUTOPATCH] Request rejected safely. Returning to shell...
+[result] patched ret=-3 (blocked) fixed=yes
+
+4. Removing patch...
+[autopatch] linked=yes ready=yes enabled=no entry=0x00000C4C online_toggle=soft-switch
+5. Call after unpatch (same attack input):
+[DEMO] Auto-fed triggering input values.
+
+=== [AUTOPATCH] Queue Target (Disabled) ===
+Status: Generated filter is present but disabled. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+=== [AUTOPATCH] Queue Target (Disabled) ===
+Status: Generated filter is present but disabled. Original vulnerable body is executing.
+
+[Input]
+  uxQueueLength = 0x40000001
+  uxItemSize    = 0x00000004
+
+[Create result]
+  expected bytes (64-bit) = 0x0000000100000004
+  alloc_size   (32-bit)   = 0x00000004
+
+[Send simulation]
+  writing to logical index = 1
+  guard before           = CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 
+  [!] Logical write exceeds actual allocated buffer.
+  guard after            = A5 A5 A5 A5 CC CC CC CC CC CC CC CC CC CC CC CC 
+  [-] Heap-buffer-overflow effect observed. Guard overwritten!
+[result] unfixed ret=-30 (overflow) fixed=no
+--- Demo End [autopatch] ---
+
+=== Fair Benchmark Compare ===
+
+=== Table 1: Online Metrics ===
+scheme     baseline         fix_ret          fix_ok  patch_calls  T_fix(100x)  unfix_ret        unfix_ok  T_unfix  T_roundtrip
+rapid overflow(-30) blocked(-3) yes 100          224789 overflow(-30) yes 2956 226974
+hera overflow(-30) blocked(-3) yes 100          24406 overflow(-30) yes 856 24620
+autopatch overflow(-30) blocked(-3) yes 100          55603 overflow(-30) yes 760 55683
+legacy overflow(-30) blocked(-3) yes 100          26056 overflow(-30) yes 3420 28835
+
+=== Table 2: Deployment Cost ===
+scheme     offline_compile  online_hot_toggle  pristine_flash
+rapid no yes no
+hera no yes no
+autopatch yes yes no
+legacy no yes yes
+[note] AutoPatch online metrics reflect deployment-ready activation latency via the software enable switch.
+[note] T_fix includes patch apply plus 100 patched calls. T_roundtrip includes apply -> 100 patched calls -> unapply.
+rtt> 
+###RTT Client: Connection lost. Going to reconnect.
+###RTT Client: Connecting to J-Link RTT Server via localhost:19021 .......

@@ -1,0 +1,97 @@
+###RTT Client: ************************************************************ 
+###RTT Client: *               SEGGER Microcontroller GmbH                * 
+###RTT Client: *   Solutions for real time microcontroller applications   * 
+###RTT Client: ************************************************************ 
+###RTT Client: *                                                          * 
+###RTT Client: *       (c) 2012 - 2016  SEGGER Microcontroller GmbH       * 
+###RTT Client: *                                                          * 
+###RTT Client: *     www.segger.com     Support: support@segger.com       * 
+###RTT Client: *                                                          * 
+###RTT Client: ************************************************************ 
+###RTT Client: *                                                          * 
+###RTT Client: * SEGGER J-Link RTT Client   Compiled Feb 19 2026 11:34:51 * 
+###RTT Client: *                                                          * 
+###RTT Client: ************************************************************ 
+
+###RTT Client: -----------------------------------------------
+###RTT Client: Connecting to J-Link RTT Server via localhost:19021 ...
+###RTT Client: Connected.
+
+SEGGER J-Link V9.20 - Real time terminal output
+SEGGER J-Link V9.5, SN=69513693
+Process: JLink.exe
+
+RTT console ready. (Legacy + RapidPatch Compare)
+[init] DWT cycle counter ready.
+commands: help, mode legacy|rapid|hera|autopatch, demo, bench, compare, call, patch, unpatch, status
+[mode] current scheme: rapid
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+[hera] active=no payload_addr=0x00000000
+[legacy] patch_slot first halfword: 0xE7FF
+[legacy] mode: original entry (fun1 path)
+[autopatch] linked=yes entry=0x000002B4 online_toggle=no
+
+=== Startup Smoke Test ===
+
+--- Demo Start [autopatch] ---
+[demo] auto input: lba_blocks=10, memory_size=1024
+1. Background call (official vulnerable context without the generated object):
+
+=== [AUTOPATCH] Background Path ===
+Status: Original vulnerable logic executes without the generated filter.
+
+[Input]
+  lba_blocks  = 10
+  memory_size = 1024 bytes
+
+[Background]
+  computed addr = 5120 bytes
+  [!] Unsafe transfer accepted. Range check was missing.
+
+2. Patched call (official AutoPatch-generated object):
+
+=== [AUTOPATCH] Generated Hotpatch Entry ===
+Status: Calling the official AutoPatch-generated object as a black box.
+
+[Input]
+  lba_blocks  = 10
+  memory_size = 1024 bytes
+
+[Patched]
+  op       = 1
+  ret_code = -22
+  [+] AutoPatch rejected the unsafe transfer before it reached the vulnerable path.
+--- Demo End [autopatch] ---
+
+=== Benchmark Compare ===
+
+--- Benchmark [rapid] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 736 cycles
+[bench] patch install: 2058 cycles
+[bench] patched call: 2208 cycles
+[bench] patch uninstall: 2173 cycles
+
+--- Benchmark [hera] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 601 cycles
+[bench] patch install: 80 cycles
+[bench] patched call: 233 cycles
+[bench] patch uninstall: 197 cycles
+
+--- Benchmark [legacy] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 605 cycles
+[bench] patch install: 2828 cycles
+[bench] patched call: 222 cycles
+[bench] patch uninstall: 2767 cycles
+
+--- Benchmark [autopatch] ---
+input                : lba_blocks=10, memory_size=1024
+[bench] background call: 92 cycles
+[bench] patched call: 404 cycles
+[bench] patch install: N/A (offline-generated object)
+[bench] patch uninstall: N/A (offline-generated object)
+rtt> 
+###RTT Client: Connection lost. Going to reconnect.
+###RTT Client: Connecting to J-Link RTT Server via localhost:19021 ....

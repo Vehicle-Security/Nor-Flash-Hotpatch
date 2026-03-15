@@ -1,0 +1,31 @@
+SEGGER J-Link V9.20 - Real time terminal output
+SEGGER J-Link V9.5, SN=69513693
+Process: JLink.exe
+
+RTT console ready. (Legacy + RapidPatch Compare)
+[init] DWT cycle counter ready.
+commands: help, mode legacy|rapid, demo, bench, compare, call, patch, unpatch, status
+[mode] current scheme: rapid
+[rapid] active=no install_addr=0x00000000 code_len=0 bytes
+[legacy] patch_slot first halfword: 0xE7FF
+[legacy] mode: original entry (fun1 path)
+rtt> compare
+
+=== Benchmark Compare ===
+[-] Cannot apply legacy patch without erase. current=0xE000 target=0xE002
+
+--- Benchmark [rapid] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 671 cycles
+[bench] patch install: 1774 cycles
+[bench] patched call: 2243 cycles
+[bench] patch uninstall: 2173 cycles
+
+--- Benchmark [legacy] ---
+input                : uxQueueLength=0x40000001, uxItemSize=0x00000004
+[bench] background call: 574 cycles
+[bench] patch install: 7150 cycles
+[bench] patched call: unavailable
+[bench] patch uninstall: unavailable
+rtt> 
+rtt> 
