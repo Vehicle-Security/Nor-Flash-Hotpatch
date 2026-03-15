@@ -68,8 +68,20 @@ SECTIONS
     } > FLASH
     __exidx_end = .;
 
+    .hera_ram_text :
+    {
+        . = ALIGN(4);
+        __hera_ram_text_start__ = .;
+        KEEP(*(.hera_ram_text))
+        KEEP(*(.hera_ram_text.*))
+        . = ALIGN(4);
+        __hera_ram_text_end__ = .;
+    } > RAM AT > FLASH
+
+    __hera_ram_text_load_start__ = LOADADDR(.hera_ram_text);
+
     . = ALIGN(4);
-    __etext = .;
+    __etext = LOADADDR(.hera_ram_text) + SIZEOF(.hera_ram_text);
 
     .data : AT (__etext)
     {

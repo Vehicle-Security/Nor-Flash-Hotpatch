@@ -1,10 +1,8 @@
 #include "cycle_counter.h"
-#include "patch_control.h"
 
 #include "nrf.h"
 
 static bool g_cycle_counter_ready = false;
-static patch_scheme_t g_measure_scheme = PATCH_SCHEME_LEGACY;
 
 bool cycle_counter_init(void) {
 #if defined(DWT) && defined(CoreDebug)
@@ -60,44 +58,4 @@ uint32_t cycle_counter_read(void) {
     __ISB();
 
     return DWT->CYCCNT;
-}
-
-uint32_t measure_cycles(void (*fn)(void)) {
-    if (!cycle_counter_reset()) {
-        return 0xFFFFFFFFu;
-    }
-
-    fn();
-
-    __DSB();
-    __ISB();
-
-    return cycle_counter_read();
-}
-
-static void apply_wrapper(void) {
-    (void)patch_apply(g_measure_scheme);
-}
-
-static void unpatch_wrapper(void) {
-    patch_unapply(g_measure_scheme);
-}
-
-static void call_wrapper(void) {
-    patch_call(g_measure_scheme);
-}
-
-uint32_t measure_patch_apply_cycles(patch_scheme_t scheme) {
-    g_measure_scheme = scheme;
-    return measure_cycles(apply_wrapper);
-}
-
-uint32_t measure_patch_unpatch_cycles(patch_scheme_t scheme) {
-    g_measure_scheme = scheme;
-    return measure_cycles(unpatch_wrapper);
-}
-
-uint32_t measure_patch_call_cycles(patch_scheme_t scheme) {
-    g_measure_scheme = scheme;
-    return measure_cycles(call_wrapper);
 }

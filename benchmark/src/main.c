@@ -20,8 +20,11 @@ typedef struct {
     bool baseline_ok;
     bool first_fix_ok;
     bool fix_ok;
+    bool pure_patch_ok;
     bool unfix_ok;
     uint32_t patched_call_count;
+    uint32_t t_base_cycles;
+    uint32_t t_patch_cycles;
     uint32_t t_fix_first_cycles;
     uint32_t t_fix_cycles;
     uint32_t t_steady_cycles;
@@ -169,6 +172,74 @@ static void format_avg_cycles(char *buf, size_t buf_size, const patch_txn_benchm
         (unsigned long)(result->t_steady_cycles / (result->patched_call_count - 1u)));
 }
 
+static void format_avg_window_cycles(char *buf,
+                                     size_t buf_size,
+                                     uint32_t total_cycles,
+                                     uint32_t call_count) {
+    if (total_cycles == 0xFFFFFFFFu || call_count == 0u) {
+        (void)snprintf(buf, buf_size, "N/A");
+        return;
+    }
+
+    (void)snprintf(
+        buf,
+        buf_size,
+        "%lu.%02lu",
+        (unsigned long)(total_cycles / call_count),
+        (unsigned long)(total_cycles % call_count));
+}
+
+static void format_avg_delta_cycles(char *buf,
+                                    size_t buf_size,
+                                    uint32_t base_cycles,
+                                    uint32_t patch_cycles,
+                                    uint32_t call_count) {
+    int64_t delta_cycles = 0;
+    uint64_t abs_delta = 0u;
+
+    if (base_cycles == 0xFFFFFFFFu || patch_cycles == 0xFFFFFFFFu || call_count == 0u) {
+        (void)snprintf(buf, buf_size, "N/A");
+        return;
+    }
+
+    delta_cycles = (int64_t)patch_cycles - (int64_t)base_cycles;
+    abs_delta = (delta_cycles < 0) ? (uint64_t)(-delta_cycles) : (uint64_t)delta_cycles;
+
+    (void)snprintf(
+        buf,
+        buf_size,
+        "%s%lu.%02lu",
+        (delta_cycles < 0) ? "-" : "",
+        (unsigned long)(abs_delta / call_count),
+        (unsigned long)(abs_delta % call_count));
+}
+
+static void format_overhead_percent(char *buf,
+                                    size_t buf_size,
+                                    uint32_t base_cycles,
+                                    uint32_t patch_cycles) {
+    int64_t delta_cycles = 0;
+    uint64_t abs_delta = 0u;
+    uint64_t scaled_percent = 0u;
+
+    if (base_cycles == 0xFFFFFFFFu || patch_cycles == 0xFFFFFFFFu || base_cycles == 0u) {
+        (void)snprintf(buf, buf_size, "N/A");
+        return;
+    }
+
+    delta_cycles = (int64_t)patch_cycles - (int64_t)base_cycles;
+    abs_delta = (delta_cycles < 0) ? (uint64_t)(-delta_cycles) : (uint64_t)delta_cycles;
+    scaled_percent = (abs_delta * 10000u) / (uint64_t)base_cycles;
+
+    (void)snprintf(
+        buf,
+        buf_size,
+        "%s%lu.%02lu%%",
+        (delta_cycles < 0) ? "-" : "",
+        (unsigned long)(scaled_percent / 100u),
+        (unsigned long)(scaled_percent % 100u));
+}
+
 static void print_exec_result(const char *stage, int ret_code) {
     SEGGER_RTT_printf(0,
         "[result] %-8s ret=%d (%s) fixed=%s\r\n",
@@ -183,6 +254,67 @@ static uint32_t cycles_delta(uint32_t end_cycles, uint32_t start_cycles) {
         return 0xFFFFFFFFu;
     }
     return end_cycles - start_cycles;
+}
+
+static uint32_t cycles_add(uint32_t lhs_cycles, uint32_t rhs_cycles) {
+    uint64_t total_cycles = 0u;
+
+    if (lhs_cycles == 0xFFFFFFFFu || rhs_cycles == 0xFFFFFFFFu) {
+        return 0xFFFFFFFFu;
+    }
+
+    total_cycles = (uint64_t)lhs_cycles + (uint64_t)rhs_cycles;
+    if (total_cycles > 0xFFFFFFFFu) {
+        return 0xFFFFFFFFu;
+    }
+
+    return (uint32_t)total_cycles;
+}
+
+static bool benchmark_expectation_met(int ret_code, bool expect_fixed) {
+    return expect_fixed ? patch_result_is_fixed(ret_code) : patch_result_is_vulnerable(ret_code);
+}
+
+static bool measure_call_window(patch_scheme_t scheme,
+                                uint32_t iterations,
+                                bool expect_fixed,
+                                uint32_t *total_cycles,
+                                int *last_ret_code) {
+    uint32_t completed_calls = 0u;
+    int ret_code = -999;
+    bool all_ok = true;
+    uint32_t measured_cycles = 0xFFFFFFFFu;
+
+    if (total_cycles != NULL) {
+        *total_cycles = 0xFFFFFFFFu;
+    }
+    if (last_ret_code != NULL) {
+        *last_ret_code = -999;
+    }
+
+    if (!cycle_counter_reset()) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < iterations; ++i) {
+        ret_code = patch_call(scheme);
+        completed_calls++;
+        if (!benchmark_expectation_met(ret_code, expect_fixed)) {
+            all_ok = false;
+            break;
+        }
+    }
+
+    measured_cycles = cycle_counter_read();
+
+    if (last_ret_code != NULL) {
+        *last_ret_code = ret_code;
+    }
+    if (total_cycles != NULL && all_ok && completed_calls == iterations && measured_cycles != 0xFFFFFFFFu) {
+        *total_cycles = measured_cycles;
+    }
+
+    return all_ok && completed_calls == iterations && measured_cycles != 0xFFFFFFFFu;
 }
 
 static void run_demo_for_scheme(patch_scheme_t scheme) {
@@ -245,8 +377,11 @@ static patch_txn_benchmark_result_t run_txn_benchmark_for_scheme(patch_scheme_t 
         .baseline_ok = false,
         .first_fix_ok = false,
         .fix_ok = false,
+        .pure_patch_ok = false,
         .unfix_ok = false,
         .patched_call_count = 0u,
+        .t_base_cycles = 0xFFFFFFFFu,
+        .t_patch_cycles = 0xFFFFFFFFu,
         .t_fix_first_cycles = 0xFFFFFFFFu,
         .t_fix_cycles = 0xFFFFFFFFu,
         .t_steady_cycles = 0xFFFFFFFFu,
@@ -260,8 +395,10 @@ static patch_txn_benchmark_result_t run_txn_benchmark_for_scheme(patch_scheme_t 
     bool all_fixed = true;
     uint32_t first_fix_end = 0xFFFFFFFFu;
     uint32_t fix_end = 0xFFFFFFFFu;
-    uint32_t unfix_start = 0xFFFFFFFFu;
+    uint32_t unapply_cycles = 0xFFFFFFFFu;
     uint32_t unfix_end = 0xFFFFFFFFu;
+    bool patch_needs_cleanup = false;
+    int warmup_ret_code = -999;
 
     if (!patch_demo_can_run(scheme)) {
         SEGGER_RTT_printf(0,
@@ -273,8 +410,12 @@ static patch_txn_benchmark_result_t run_txn_benchmark_for_scheme(patch_scheme_t 
     prepare_scheme_baseline(scheme);
     app_set_exec_mode(APP_EXEC_MODE_BENCHMARK);
 
-    result.baseline_ret_code = patch_call(scheme);
-    result.baseline_ok = patch_result_is_vulnerable(result.baseline_ret_code);
+    result.baseline_ok = measure_call_window(
+        scheme,
+        BENCHMARK_PATCHED_CALLS,
+        false,
+        &result.t_base_cycles,
+        &result.baseline_ret_code);
 
     if (!result.baseline_ok) {
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
@@ -291,6 +432,7 @@ static patch_txn_benchmark_result_t run_txn_benchmark_for_scheme(patch_scheme_t 
     }
 
     result.apply_ok = patch_apply(scheme);
+    patch_needs_cleanup = result.apply_ok;
     for (uint32_t i = 0; i < BENCHMARK_PATCHED_CALLS; ++i) {
         int ret_code = patch_call(scheme);
 
@@ -307,21 +449,47 @@ static patch_txn_benchmark_result_t run_txn_benchmark_for_scheme(patch_scheme_t 
     }
     fix_end = cycle_counter_read();
 
-    unfix_start = fix_end;
-    patch_unapply(scheme);
-    result.t_roundtrip_cycles = cycle_counter_read();
-
-    result.unfix_ret_code = patch_call(scheme);
-    unfix_end = cycle_counter_read();
-
     result.t_fix_first_cycles = first_fix_end;
     result.t_fix_cycles = fix_end;
     result.t_steady_cycles = cycles_delta(fix_end, first_fix_end);
-    result.t_unfix_cycles = cycles_delta(unfix_end, unfix_start);
     result.first_fix_ok = result.apply_ok && patch_result_is_fixed(result.first_fix_ret_code);
     result.fix_ok = result.apply_ok
         && all_fixed
         && (result.patched_call_count == BENCHMARK_PATCHED_CALLS);
+
+    if (result.apply_ok) {
+        warmup_ret_code = patch_call(scheme);
+        if (patch_result_is_fixed(warmup_ret_code)) {
+            result.pure_patch_ok = measure_call_window(
+                scheme,
+                BENCHMARK_PATCHED_CALLS,
+                true,
+                &result.t_patch_cycles,
+                NULL);
+        }
+    }
+
+    if (!cycle_counter_reset()) {
+        if (patch_needs_cleanup) {
+            patch_unapply(scheme);
+        }
+        app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
+        return result;
+    }
+
+    if (patch_needs_cleanup) {
+        patch_unapply(scheme);
+        patch_needs_cleanup = false;
+        unapply_cycles = cycle_counter_read();
+    }
+
+    result.unfix_ret_code = patch_call(scheme);
+    unfix_end = cycle_counter_read();
+
+    if (unapply_cycles != 0xFFFFFFFFu) {
+        result.t_unfix_cycles = unfix_end;
+        result.t_roundtrip_cycles = cycles_add(result.t_fix_cycles, unapply_cycles);
+    }
     result.unfix_ok = patch_result_is_vulnerable(result.unfix_ret_code);
     result.available = true;
 
@@ -394,6 +562,56 @@ static void print_steady_state_table(const patch_scheme_t *schemes,
     }
 }
 
+static void print_pure_call_table(const patch_scheme_t *schemes,
+                                  const patch_txn_benchmark_result_t *results,
+                                  size_t count) {
+    console_puts("\r\n=== Table 1C: Pure Call Overhead ===\r\n");
+    console_puts("scheme     avg_base     avg_patch    delta        overhead%\r\n");
+
+    for (size_t i = 0; i < count; ++i) {
+        char avg_base_buf[16];
+        char avg_patch_buf[16];
+        char delta_buf[16];
+        char overhead_buf[16];
+
+        format_avg_window_cycles(
+            avg_base_buf,
+            sizeof(avg_base_buf),
+            results[i].t_base_cycles,
+            BENCHMARK_PATCHED_CALLS);
+        format_avg_window_cycles(
+            avg_patch_buf,
+            sizeof(avg_patch_buf),
+            results[i].t_patch_cycles,
+            BENCHMARK_PATCHED_CALLS);
+        format_avg_delta_cycles(
+            delta_buf,
+            sizeof(delta_buf),
+            results[i].t_base_cycles,
+            results[i].t_patch_cycles,
+            BENCHMARK_PATCHED_CALLS);
+        format_overhead_percent(
+            overhead_buf,
+            sizeof(overhead_buf),
+            results[i].t_base_cycles,
+            results[i].t_patch_cycles);
+
+        SEGGER_RTT_printf(0,
+            "%-10s %-12s %-12s %-12s %-10s\r\n",
+            patch_scheme_name(schemes[i]),
+            avg_base_buf,
+            avg_patch_buf,
+            delta_buf,
+            overhead_buf);
+    }
+
+    SEGGER_RTT_printf(0,
+        "[note] avg_base and avg_patch are measured over %lu calls with the same benchmark input.\r\n",
+        (unsigned long)BENCHMARK_PATCHED_CALLS);
+    console_puts("[note] Patched calls use one uncounted warm-up call before reset to capture steady-state overhead.\r\n");
+    console_puts("[note] delta = avg_patch - avg_base. overhead% = delta / avg_base.\r\n");
+}
+
 static void print_deployment_table(const patch_scheme_t *schemes, size_t count) {
     console_puts("\r\n=== Table 2: Deployment Cost ===\r\n");
     console_puts("scheme     offline_compile  online_hot_toggle  pristine_flash\r\n");
@@ -421,6 +639,7 @@ static void print_deployment_table(const patch_scheme_t *schemes, size_t count) 
 static void print_single_scheme_benchmark(patch_scheme_t scheme, const patch_txn_benchmark_result_t *result) {
     print_first_hit_table(&scheme, result, 1u);
     print_steady_state_table(&scheme, result, 1u);
+    print_pure_call_table(&scheme, result, 1u);
     print_deployment_table(&scheme, 1u);
 }
 
@@ -440,6 +659,7 @@ static void run_compare(void) {
 
     print_first_hit_table(g_compare_order, results, sizeof(results) / sizeof(results[0]));
     print_steady_state_table(g_compare_order, results, sizeof(results) / sizeof(results[0]));
+    print_pure_call_table(g_compare_order, results, sizeof(results) / sizeof(results[0]));
     print_deployment_table(g_compare_order, sizeof(results) / sizeof(results[0]));
 }
 

@@ -31,6 +31,5 @@ int rapid_fixed_patch_point_invoke(uint32_t r0, uint32_t r1, uint32_t r2, uint32
 uint32_t rapid_patch_install_addr(void);
 uint16_t rapid_patch_code_size(void);
 const uint8_t *rapid_patch_code_bytes(void);
-uintptr_t hera_patch_payload_addr(void);
 
 #endif

@@ -1,0 +1,55 @@
+Processing nrf52840_dk (platform: nordicnrf52; board: nrf52840_dk)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/nordicnrf52/nrf52840_dk.html
+PLATFORM: Nordic nRF52 (10.11.0) > Nordic nRF52840-DK
+HARDWARE: NRF52840 64MHz, 256KB RAM, 1MB Flash
+DEBUG: Current (jlink) On-board (cmsis-dap, jlink) External (blackmagic, stlink)
+PACKAGES: 
+ - tool-sreccat @ 1.164.0 (1.64) 
+ - toolchain-gccarmnoneeabi @ 1.70201.0 (7.2.1)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 0 compatible libraries
+Scanning dependencies...
+No dependencies
+Building in release mode
+Compiling .pio\build\nrf52840_dk\src\sdk_src\app_error.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\app_error_handler_gcc.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\app_error_weak.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\app_fifo.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\app_uart_fifo.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\app_util_platform.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\boards.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\gcc_startup_nrf52840.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrf_assert.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrf_atomic.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrf_drv_uart.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrfx_atomic.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrfx_prs.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrfx_uart.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\nrfx_uarte.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\segger_rtt_core.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\segger_rtt_printf.o
+Compiling .pio\build\nrf52840_dk\src\sdk_src\system_nrf52840.o
+Compiling .pio\build\nrf52840_dk\src\src\autopatch_generated_queue.o
+Compiling .pio\build\nrf52840_dk\src\src\autopatch_mode.o
+Compiling .pio\build\nrf52840_dk\src\src\autopatch_shim.o
+Compiling .pio\build\nrf52840_dk\src\src\cycle_counter.o
+Compiling .pio\build\nrf52840_dk\src\src\hera_patch.o
+Compiling .pio\build\nrf52840_dk\src\src\main.o
+Compiling .pio\build\nrf52840_dk\src\src\patch_fun.o
+Compiling .pio\build\nrf52840_dk\src\src\patch_result.o
+Compiling .pio\build\nrf52840_dk\src\src\patch_slot.o
+Compiling .pio\build\nrf52840_dk\src\src\queue_demo.o
+Compiling .pio\build\nrf52840_dk\src\src\rapidpatch_vm.o
+Compiling .pio\build\nrf52840_dk\src\src\vuln_fun.o
+Linking .pio\build\nrf52840_dk\firmware.elf
+_build_firmware_bin([".pio\build\nrf52840_dk\firmware.elf"], [".pio\build\nrf52840_dk\src\sdk_src\app_error.o", ".pio\build\nrf52840_dk\src\sdk_src\app_error_handler_gcc.o", ".pio\build\nrf52840_dk\src\sdk_src\app_error_weak.o", ".pio\build\nrf52840_dk\src\sdk_src\app_fifo.o", ".pio\build\nrf52840_dk\src\sdk_src\app_uart_fifo.o", ".pio\build\nrf52840_dk\src\sdk_src\app_util_platform.o", ".pio\build\nrf52840_dk\src\sdk_src\boards.o", ".pio\build\nrf52840_dk\src\sdk_src\gcc_startup_nrf52840.o", ".pio\build\nrf52840_dk\src\sdk_src\nrf_assert.o", ".pio\build\nrf52840_dk\src\sdk_src\nrf_atomic.o", ".pio\build\nrf52840_dk\src\sdk_src\nrf_drv_uart.o", ".pio\build\nrf52840_dk\src\sdk_src\nrfx_atomic.o", ".pio\build\nrf52840_dk\src\sdk_src\nrfx_prs.o", ".pio\build\nrf52840_dk\src\sdk_src\nrfx_uart.o", ".pio\build\nrf52840_dk\src\sdk_src\nrfx_uarte.o", ".pio\build\nrf52840_dk\src\sdk_src\segger_rtt_core.o", ".pio\build\nrf52840_dk\src\sdk_src\segger_rtt_printf.o", ".pio\build\nrf52840_dk\src\sdk_src\system_nrf52840.o", ".pio\build\nrf52840_dk\src\src\autopatch_generated_queue.o", ".pio\build\nrf52840_dk\src\src\autopatch_mode.o", ".pio\build\nrf52840_dk\src\src\autopatch_shim.o", ".pio\build\nrf52840_dk\src\src\cycle_counter.o", ".pio\build\nrf52840_dk\src\src\hera_patch.o", ".pio\build\nrf52840_dk\src\src\main.o", ".pio\build\nrf52840_dk\src\src\patch_fun.o", ".pio\build\nrf52840_dk\src\src\patch_result.o", ".pio\build\nrf52840_dk\src\src\patch_slot.o", ".pio\build\nrf52840_dk\src\src\queue_demo.o", ".pio\build\nrf52840_dk\src\src\rapidpatch_vm.o", ".pio\build\nrf52840_dk\src\src\vuln_fun.o"])
+Building C:\Users\H2Q\Downloads\benchmark\.pio\build\nrf52840_dk\firmware.bin
+Checking size .pio\build\nrf52840_dk\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [          ]   1.2% (used 3156 bytes from 262144 bytes)
+Flash: [          ]   2.1% (used 21548 bytes from 1048576 bytes)
+Building .pio\build\nrf52840_dk\firmware.hex
+========================= [SUCCESS] Took 1.87 seconds =========================

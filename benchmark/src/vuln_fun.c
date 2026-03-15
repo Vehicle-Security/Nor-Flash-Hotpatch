@@ -14,7 +14,9 @@ static const queue_demo_profile_t g_unpatched_profile = {
     .validate_before_alloc = false,
 };
 
-int fun1(void) {
+int hera_ram_dispatcher(void);
+
+static __attribute__((used)) int fun1_impl(void) {
     UBaseType_t uxQueueLength = 0;
     UBaseType_t uxItemSize = 0;
     bool verbose = app_exec_mode_is_verbose();
@@ -29,6 +31,15 @@ int fun1(void) {
     }
 
     return queue_demo_run(uxQueueLength, uxItemSize, verbose, &g_unpatched_profile);
+}
+
+__attribute__((naked, noinline, used, aligned(4), section(".text.fun1_entry")))
+int fun1(void) {
+    __asm volatile(
+        ".thumb                    \n"
+        "b.w   fun1_impl           \n"
+        ".word hera_ram_dispatcher + 1 \n"
+    );
 }
 
 int rapid_vuln_target(UBaseType_t uxQueueLength, UBaseType_t uxItemSize) {

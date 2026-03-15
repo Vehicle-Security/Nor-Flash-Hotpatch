@@ -1,0 +1,40 @@
+SEGGER J-Link GDB Server V9.20 Command Line Version
+
+JLinkARM.dll V9.20 (DLL compiled Feb 19 2026 11:33:26)
+
+Command line: -device nRF52840_xxAA -if SWD -speed 4000 -port 2331 -swoport 2332 -telnetport 2333 -rtttelnetport 19021 -localhostonly 1 -nohalt -noreset
+-----GDB Server start settings-----
+GDBInit file:                  none
+GDB Server Listening port:     2331
+SWO raw output listening port: 2332
+Terminal I/O port:             2333
+Accept remote connection:      localhost only
+Generate logfile:              off
+Verify download:               off
+Init regs on start:            off
+Silent mode:                   off
+Single run mode:               off
+Target connection timeout:     0 ms
+------J-Link related settings------
+J-Link Host interface:         USB
+J-Link script:                 none
+J-Link settings file:          none
+------Target related settings------
+Target device:                 nRF52840_xxAA
+Target device parameters:      none
+Target interface:              SWD
+Target interface speed:        4000kHz
+Target endian:                 little
+
+Connecting to J-Link...
+J-Link is connected.
+Firmware: J-Link V9 compiled May  7 2021 16:26:12
+Hardware: V9.50
+S/N: 69513693
+Feature(s): JFlash, GDB, RDI, FlashBP, FlashDL
+Checking target voltage...
+Target voltage: 3.29 V
+Listening on TCP/IP port 2331
+Connecting to target...
+Connected to target
+Waiting for GDB connection...

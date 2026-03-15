@@ -270,7 +270,7 @@ int patch_call(patch_scheme_t scheme) {
         return rapid_patch_slot();
     }
     if (scheme == PATCH_SCHEME_HERA) {
-        return hera_patch_slot();
+        return fun1();
     }
     if (scheme == PATCH_SCHEME_AUTOPATCH) {
         return autopatch_patch_slot();
@@ -345,10 +345,7 @@ void print_patch_status(patch_scheme_t scheme) {
     }
 
     if (scheme == PATCH_SCHEME_HERA) {
-        SEGGER_RTT_printf(0,
-            "[hera] active=%s payload_addr=0x%08X\r\n",
-            hera_patch_is_active() ? "yes" : "no",
-            (uint32_t)hera_patch_payload_addr());
+        hera_patch_print_status();
         return;
     }
 
