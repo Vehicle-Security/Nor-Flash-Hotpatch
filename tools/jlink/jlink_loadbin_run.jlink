@@ -1,0 +1,4 @@
+loadbin .pio\\build\\nrf52840_dk\\firmware.bin,0x0
+r
+g
+q

@@ -1,0 +1,7 @@
+vs_2017/
+__pycache__/
+_build/
+.idea
+cmake-build-debug
+.vscode
+.DS_Store

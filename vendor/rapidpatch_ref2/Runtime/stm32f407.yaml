@@ -1,0 +1,43 @@
+
+
+MyApp:
+- app/ihp_cli.h
+- app/ihp_cli.c
+- app/dummy_cve.h
+- app/dummy_cve.c
+- app/ihp_config.h
+- app/ihp_porting.c
+- app/cve_trigger.h
+- app/ihp_porting.h
+- app/rt_app.h
+- app/rt_app.c
+
+HotPatch:
+- hotpatch/include/*.h
+- hotpatch/src/*.c
+
+
+eBPF:
+- libebpf/include/ebpf.h
+- libebpf/include/hashmap.h
+- libebpf/include/ebpf_porting.h
+- libebpf/src/hashmap.c
+- libebpf/src/ebpf_inst.h
+- libebpf/src/ebpf_allocator.c
+- libebpf/src/ebpf_vm.c
+- libebpf/src/jit.c
+- libebpf/src/jit_thumb2.c
+
+INCLUDE:
+- libebpf
+- app
+- hotpatch
+- .
+
+DEFINE:
+# arch: SYS_CORTEX_M4 SYS_RISCV_32
+- SYS_CORTEX_M4
+# OS: NRF52_NO_OS ZEPHYR_OS STM32L475_NO_OS
+- STM32F407_NO_OS
+# ide
+- USE_KEIL

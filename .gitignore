@@ -1,0 +1,36 @@
+# PlatformIO
+.pio/
+.platformio_local/
+
+# Build artifacts
+*.bin
+*.elf
+*.hex
+*.map
+
+# IDE
+.vscode/
+.idea/
+
+# Generated output / log files
+.build_stderr.txt
+.build_stdout.txt
+.gdbserver_stderr.txt
+.gdbserver_stdout.txt
+.jlink_help_output.txt
+.jlink_gdb_help.txt
+.jlink_rtt_out.txt
+.jlink_rtt_err.txt
+tmp_*
+verify_jlink_out.txt
+verify_jlink_err.txt
+
+# Backup directories
+.codex_backup/
+
+# Archives
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db

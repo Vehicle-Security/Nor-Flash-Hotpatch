@@ -1,0 +1,9 @@
+[submodule "VulDevices"]
+	path = VulDevices
+	url = https://github.com/IoTAccessControl/RapidPatch-VulDevices-AE.git
+[submodule "Runtime"]
+	path = Runtime
+	url = https://github.com/IoTAccessControl/RapidPatch-Runtime-AE.git
+[submodule "Toolchain"]
+	path = Toolchain
+	url = https://github.com/IoTAccessControl/RapidPatch-ToolChain.git
