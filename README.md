@@ -18,14 +18,15 @@ redirects execution to the fix function even if the flash write fails.
 ## Repository Structure
 
 ```
-core/             Core ClearBitPatch implementation (shared by all ARM targets)
-ports/            RTOS port adapters (baremetal, FreeRTOS, LiteOS, NuttX, ...)
-compare/          Benchmark comparison: ClearBitPatch vs RapidPatch / HERA / AutoPatch
-realworld/        Real-world LED demo — live hotpatch without disrupting a blinking task
-riscv/            RISC-V port (CH32V203C8T6, standalone PlatformIO project)
-platform/         Hardware support (nRF52840 SDK wrappers, linker scripts, config)
-vendor/           Third-party: nRF5 SDK 17.1.0, FreeRTOS-Kernel, LiteOS, NuttX, RapidPatch ref
-tools/            J-Link scripts and RTT input files for automated testing
+src/                    Source modules
+  core/                 ClearBitPatch core implementation (shared by all ARM targets)
+  compare/              Benchmark comparison: ClearBitPatch vs RapidPatch / HERA / AutoPatch
+  realworld/            Real-world LED demo — live hotpatch without disrupting a blinking task
+targets/                Hardware targets
+  nrf52840/             ARM Cortex-M4: SDK wrappers, linker scripts, config, J-Link tools
+  ch32v203/             RISC-V: standalone PlatformIO project (CH32V203C8T6)
+  vendor/               Third-party: nRF5 SDK 17.1.0, FreeRTOS-Kernel, LiteOS, NuttX, RapidPatch
+ports/                  RTOS port adapters (baremetal, FreeRTOS, LiteOS, NuttX, RT-Thread, Zephyr)
 ```
 
 ## Build Targets (ARM — nRF52840 DK)
@@ -76,7 +77,7 @@ compare         Run benchmarks for all four schemes and print a comparison table
 The RISC-V port is a standalone PlatformIO project:
 
 ```bash
-cd riscv
+cd targets/ch32v203
 pio run                    # build
 pio run -t upload          # flash via WCH-Link
 ```
