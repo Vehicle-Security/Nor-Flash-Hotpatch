@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "compare/patch/patch_control.h"
+#include "core/platform/memory_cost.h"
 
 typedef struct {
     bool available;
@@ -34,6 +35,7 @@ typedef struct {
     uint32_t t_steady_100;
     uint32_t t_uninstall;
     uint32_t t_roundtrip;
+    memory_cost_t mem_cost;
 } patch_txn_benchmark_result_t;
 
 patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme);

@@ -90,6 +90,8 @@ patch_txn_benchmark_result_t benchmark_run(void) {
     uint32_t unfix_end = 0xFFFFFFFFu;
     bool patch_needs_cleanup = false;
 
+    result.mem_cost = patch_memory_cost();
+
     if (!patch_demo_can_run()) {
         console_printf(
             "[-] %s benchmark requires a pristine flash image. Reflash/reset before rerunning it.\r\n",
@@ -237,6 +239,13 @@ void benchmark_print(const patch_txn_benchmark_result_t *result) {
         "[note] patched_%lu includes the first patched call. steady is calls 2..%lu.\r\n",
         (unsigned long)BENCHMARK_PATCHED_CALLS,
         (unsigned long)BENCHMARK_PATCHED_CALLS);
+
+    console_puts("\r\n=== Memory Cost (bytes) ===\r\n");
+    console_printf(
+        "scheme=%-14s flash=%lu ram=%lu\r\n",
+        patch_scheme_name(),
+        (unsigned long)result->mem_cost.flash_bytes,
+        (unsigned long)result->mem_cost.ram_bytes);
 }
 
 void benchmark_run_and_print(void) {

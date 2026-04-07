@@ -24,6 +24,7 @@ typedef struct {
     uint32_t (*bench_patch_exec_only)(void);
     bool trigger_is_approx_when_missing;
     bool pass_is_approx_when_arg_ignored;
+    memory_cost_t (*memory_cost)(void);
 } benchmark_scheme_ops_t;
 
 static const benchmark_scheme_ops_t g_bench_schemes[] = {
@@ -42,6 +43,7 @@ static const benchmark_scheme_ops_t g_bench_schemes[] = {
         .bench_patch_exec_only = rapid_bench_patch_exec_only,
         .trigger_is_approx_when_missing = false,
         .pass_is_approx_when_arg_ignored = false,
+        .memory_cost = rapid_memory_cost,
     },
     {
         .scheme = PATCH_SCHEME_HERA,
@@ -58,6 +60,7 @@ static const benchmark_scheme_ops_t g_bench_schemes[] = {
         .bench_patch_exec_only = NULL,
         .trigger_is_approx_when_missing = true,
         .pass_is_approx_when_arg_ignored = true,
+        .memory_cost = hera_memory_cost,
     },
     {
         .scheme = PATCH_SCHEME_AUTOPATCH,
@@ -74,6 +77,7 @@ static const benchmark_scheme_ops_t g_bench_schemes[] = {
         .bench_patch_exec_only = autopatch_bench_patch_exec_only,
         .trigger_is_approx_when_missing = false,
         .pass_is_approx_when_arg_ignored = false,
+        .memory_cost = autopatch_memory_cost,
     },
     {
         .scheme = PATCH_SCHEME_LEGACY,
@@ -90,6 +94,7 @@ static const benchmark_scheme_ops_t g_bench_schemes[] = {
         .bench_patch_exec_only = NULL,
         .trigger_is_approx_when_missing = true,
         .pass_is_approx_when_arg_ignored = true,
+        .memory_cost = clearbit_memory_cost,
     },
 };
 
@@ -411,6 +416,10 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
         return result;
     }
 
+    if (entry->memory_cost != NULL) {
+        result.mem_cost = entry->memory_cost();
+    }
+
     if (!patch_demo_can_run(scheme)) {
         SEGGER_RTT_printf(0,
             "[-] %s benchmark requires a pristine flash image. Reflash/reset before rerunning it.\r\n",
@@ -637,9 +646,26 @@ static void print_runtime_notes(const patch_scheme_t *schemes,
     (void)schemes;
 }
 
+static void print_memory_table(const patch_scheme_t *schemes,
+                               const patch_txn_benchmark_result_t *results,
+                               size_t count) {
+    console_puts("\r\n=== Memory Cost (bytes) ===\r\n");
+    SEGGER_RTT_printf(0,
+        "scheme             flash       ram\r\n");
+
+    for (size_t i = 0; i < count; ++i) {
+        SEGGER_RTT_printf(0,
+            "%-18s %-11lu %-11lu\r\n",
+            table_scheme_name(schemes[i]),
+            (unsigned long)results[i].mem_cost.flash_bytes,
+            (unsigned long)results[i].mem_cost.ram_bytes);
+    }
+}
+
 void benchmark_print_single_scheme(patch_scheme_t scheme, const patch_txn_benchmark_result_t *result) {
     print_runtime_table(&scheme, result, 1u);
     print_return_table(&scheme, result, 1u);
+    print_memory_table(&scheme, result, 1u);
     print_runtime_notes(&scheme, result, 1u);
 }
 
@@ -668,5 +694,6 @@ void benchmark_compare_and_print(void) {
 
     print_runtime_table(schemes, results, sizeof(results) / sizeof(results[0]));
     print_return_table(schemes, results, sizeof(results) / sizeof(results[0]));
+    print_memory_table(schemes, results, sizeof(results) / sizeof(results[0]));
     print_runtime_notes(schemes, results, sizeof(results) / sizeof(results[0]));
 }

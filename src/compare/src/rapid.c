@@ -722,3 +722,14 @@ void rapid_patch_print_status(void) {
         cve_target_name(cve_target_get_current()),
         g_rapid_ctx.install_addr);
 }
+
+memory_cost_t rapid_memory_cost(void) {
+    memory_cost_t cost;
+
+    cost.flash_bytes = (uint32_t)(sizeof(g_rapid_prog_cve2024_2212)
+                                + sizeof(g_rapid_prog_cve2025_1674)
+                                + sizeof(g_rapid_prog_cve2025_12899)
+                                + sizeof(g_rapid_builtin_descs));
+    cost.ram_bytes   = (uint32_t)(sizeof(g_rapid_ctx));
+    return cost;
+}

@@ -14,3 +14,7 @@ int clearbit_invoke(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3) {
     (void)r3;
     return patch_slot();
 }
+
+memory_cost_t clearbit_memory_cost(void) {
+    return clearbit_patch_memory_cost();
+}

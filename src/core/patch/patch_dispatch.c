@@ -42,3 +42,7 @@ bool patch_demo_can_run(void) {
 void print_patch_status(void) {
     clearbit_patch_print_status();
 }
+
+memory_cost_t patch_memory_cost(void) {
+    return clearbit_patch_memory_cost();
+}

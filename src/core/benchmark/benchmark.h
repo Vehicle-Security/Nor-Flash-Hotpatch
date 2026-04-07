@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "../platform/memory_cost.h"
+
 typedef struct {
     bool available;
     bool apply_ok;
@@ -24,6 +26,7 @@ typedef struct {
     int first_fix_ret_code;
     int fix_ret_code;
     int unfix_ret_code;
+    memory_cost_t mem_cost;
 } patch_txn_benchmark_result_t;
 
 patch_txn_benchmark_result_t benchmark_run(void);

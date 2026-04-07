@@ -20,6 +20,9 @@
 #include "../console/console.h"
 #include "../target/targets.h"
 
+extern uint32_t __hotpatch_page_start__;
+extern uint32_t __hotpatch_page_end__;
+
 #define CLEARBIT_PATCH_ORIGINAL_HALFWORD 0xE7FFu  /* Thumb: b . (infinite loop) */
 #define CLEARBIT_PATCH_UNPATCH_HALFWORD  0xE000u  /* Thumb: b +0 (fall through) */
 
@@ -243,4 +246,15 @@ int patch_slot(void) {
         ".hword 0xE7FF \n"
         "nop           \n"
         "b   fun1      \n");
+}
+
+memory_cost_t clearbit_patch_memory_cost(void) {
+    memory_cost_t cost;
+
+    cost.flash_bytes = (uint32_t)((uintptr_t)&__hotpatch_page_end__
+                                - (uintptr_t)&__hotpatch_page_start__);
+    cost.ram_bytes   = (uint32_t)(sizeof(g_patch_recovery_target)
+                                + sizeof(g_patch_recovery_instr)
+                                + sizeof(g_patch_recovery_pending));
+    return cost;
 }

@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "core/patch/clearbit_patch.h"
+#include "core/platform/memory_cost.h"
 
 typedef struct {
     const char *name;
@@ -47,5 +48,10 @@ int rapid_fixed_patch_point_invoke(uint32_t r0, uint32_t r1, uint32_t r2, uint32
 uint32_t rapid_bench_trigger_only(void);
 uint32_t rapid_bench_dispatch_only(uint32_t active_patch_count);
 uint32_t rapid_bench_patch_exec_only(void);
+
+memory_cost_t clearbit_memory_cost(void);
+memory_cost_t rapid_memory_cost(void);
+memory_cost_t hera_memory_cost(void);
+memory_cost_t autopatch_memory_cost(void);
 
 #endif

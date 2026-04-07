@@ -203,3 +203,18 @@ void hera_patch_print_status(void) {
         (uint32_t)(uintptr_t)g_hera_fpb_remap_table,
         cve_target_name(cve_target_get_current()));
 }
+
+memory_cost_t hera_memory_cost(void) {
+    memory_cost_t cost;
+
+    /* Flash: load image of .hera_ram_text stored in FLASH (> RAM AT > FLASH). */
+    cost.flash_bytes = (uint32_t)((uintptr_t)&__hera_ram_text_end__
+                                - (uintptr_t)&__hera_ram_text_start__);
+    /* RAM: runtime copy of .hera_ram_text + FPB remap table + state variables. */
+    cost.ram_bytes   = (uint32_t)(((uintptr_t)&__hera_ram_text_end__
+                                 - (uintptr_t)&__hera_ram_text_start__)
+                                + sizeof(g_hera_fpb_remap_table)
+                                + sizeof(g_hera_fpb_initialized)
+                                + sizeof(g_hera_api));
+    return cost;
+}

@@ -761,3 +761,11 @@ void autopatch_print_status(void) {
             (uint32_t)(((uintptr_t)desc->handler_fn) & ~(uintptr_t)1u));
     }
 }
+
+memory_cost_t autopatch_memory_cost(void) {
+    memory_cost_t cost;
+
+    cost.flash_bytes = 0u;
+    cost.ram_bytes   = (uint32_t)(sizeof(g_autopatch_rt));
+    return cost;
+}
