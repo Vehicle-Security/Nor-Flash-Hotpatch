@@ -1,4 +1,4 @@
-#include "clearbit_app.h"
+#include "morph_app.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -6,7 +6,7 @@
 #include "../console/console.h"
 #include "../platform/cycle_counter.h"
 
-void clearbit_app_boot(void) {
+void morph_app_boot(void) {
     console_init();
 
     if (cycle_counter_init()) {
@@ -21,7 +21,7 @@ void clearbit_app_boot(void) {
     console_prompt();
 }
 
-void clearbit_app_process_once(void) {
+void morph_app_process_once(void) {
     static char cmd[48];
     static size_t len = 0u;
 
@@ -34,10 +34,10 @@ void clearbit_app_process_once(void) {
     console_prompt();
 }
 
-void clearbit_app_run_forever(void) {
-    clearbit_app_boot();
+void morph_app_run_forever(void) {
+    morph_app_boot();
 
     while (true) {
-        clearbit_app_process_once();
+        morph_app_process_once();
     }
 }

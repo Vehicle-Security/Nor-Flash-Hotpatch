@@ -1,5 +1,5 @@
 /*
- * patch_control.c — ClearBitPatch for RISC-V (CH32V203C8T6).
+ * patch_control.c — MorphPatch for RISC-V (CH32V203C8T6).
  *
  * Uses the same monotonic bit-clear strategy as the ARM version but operates
  * on 32-bit RISC-V branch instructions instead of 16-bit Thumb halfwords.
@@ -132,7 +132,7 @@ static void default_print_patch_status(void)
 }
 
 static const patch_scheme_ops_t g_default_patch_scheme = {
-    .name = "ClearBitPatch-RV (erase-free, 1->0 only)",
+    .name = "MorphPatch-RV (erase-free, 1->0 only)",
     .call = default_patch_call,
     .apply = default_patch_apply,
     .unapply = default_patch_unapply,

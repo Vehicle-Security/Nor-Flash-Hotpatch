@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "core/app/clearbit_app.h"
+#include "core/app/morph_app.h"
 
 typedef struct {
     void *control_thread;
@@ -13,10 +13,10 @@ static rtthread_port_state_t g_rtthread_port = {0};
 static void rtthread_control_thread_entry(void *parameter) {
     (void)parameter;
 
-    clearbit_app_boot();
+    morph_app_boot();
 
     for (;;) {
-        clearbit_app_process_once();
+        morph_app_process_once();
         /* TODO: swap this polling loop for the RT-Thread shell/backend hook. */
     }
 }

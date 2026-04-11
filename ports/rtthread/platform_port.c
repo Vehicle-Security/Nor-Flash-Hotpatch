@@ -40,7 +40,7 @@ int platform_patch_call(platform_patch_entry_fn_t entry) {
 }
 
 void platform_lock_patch_region(void) {
-    /* TODO: serialize ClearBitPatch flash writes with RT-Thread synchronization. */
+    /* TODO: serialize MorphPatch flash writes with RT-Thread synchronization. */
 }
 
 void platform_unlock_patch_region(void) {

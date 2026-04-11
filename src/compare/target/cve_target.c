@@ -12,6 +12,35 @@ static const UBaseType_t g_cve2024_2212_queue_length = 0x40000001u;
 static const UBaseType_t g_cve2024_2212_item_size = 0x00000004u;
 
 static cve_target_t g_current_target = CVE_TARGET_CVE2024_2212;
+static bool g_benchmark_override_valid = false;
+static cve_target_input_t g_benchmark_override_input = {0};
+
+static void cve_target_build_input_from_regs(cve_target_t target,
+                                             uint32_t r0,
+                                             uint32_t r1,
+                                             uint32_t r2,
+                                             uint32_t r3,
+                                             cve_target_input_t *input) {
+    if (input == NULL) {
+        return;
+    }
+
+    memset(input, 0, sizeof(*input));
+    input->target = target;
+
+    if (target == CVE_TARGET_CVE2024_2212) {
+        input->queue_length = (UBaseType_t)r0;
+        input->item_size = (UBaseType_t)r1;
+        input->runtime_arg0 = r0;
+        input->runtime_arg1 = r1;
+        return;
+    }
+
+    input->runtime_arg0 = r0;
+    input->runtime_arg1 = r1;
+    input->runtime_arg2 = r2;
+    input->runtime_arg3 = r3;
+}
 
 const char *cve_target_name(cve_target_t target) {
     if (target == CVE_TARGET_CVE2025_1674) {
@@ -68,6 +97,18 @@ void cve_target_print_status(void) {
     SEGGER_RTT_printf(0, "[target] current vulnerability: %s\r\n", cve_target_name(g_current_target));
 }
 
+void cve_target_set_benchmark_override_from_regs(uint32_t r0,
+                                                 uint32_t r1,
+                                                 uint32_t r2,
+                                                 uint32_t r3) {
+    cve_target_build_input_from_regs(cve_target_get_current(), r0, r1, r2, r3, &g_benchmark_override_input);
+    g_benchmark_override_valid = true;
+}
+
+void cve_target_clear_benchmark_override(void) {
+    g_benchmark_override_valid = false;
+}
+
 void cve_target_get_attack_inputs(cve_target_input_t *input) {
     if (input == NULL) {
         return;
@@ -104,10 +145,19 @@ void cve_target_get_attack_inputs(cve_target_input_t *input) {
 }
 
 bool cve_target_fetch_inputs(cve_target_input_t *input, bool *auto_fed) {
-    bool fed = app_get_exec_mode() != APP_EXEC_MODE_INTERACTIVE;
+    app_exec_mode_t exec_mode = app_get_exec_mode();
+    bool fed = exec_mode != APP_EXEC_MODE_INTERACTIVE;
 
     if (input == NULL) {
         return false;
+    }
+
+    if (exec_mode == APP_EXEC_MODE_BENCHMARK && g_benchmark_override_valid) {
+        memcpy(input, &g_benchmark_override_input, sizeof(*input));
+        if (auto_fed != NULL) {
+            *auto_fed = true;
+        }
+        return true;
     }
 
     cve_target_get_attack_inputs(input);

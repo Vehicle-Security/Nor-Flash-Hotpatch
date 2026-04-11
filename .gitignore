@@ -24,6 +24,8 @@
 tmp_*
 verify_jlink_out.txt
 verify_jlink_err.txt
+artifacts/
+scripts/
 
 # Backup directories
 .codex_backup/

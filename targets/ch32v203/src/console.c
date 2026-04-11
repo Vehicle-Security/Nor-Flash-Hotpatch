@@ -145,7 +145,7 @@ static void run_demo(void)
 void console_init(void)
 {
     (void)board_console_init();
-    console_puts("\r\nUART console ready. (ClearBitPatch-RV Demo)\r\n");
+    console_puts("\r\nUART console ready. (MorphPatch-RV Demo)\r\n");
 }
 
 void console_puts(const char *s)

@@ -1,15 +1,15 @@
 /*
- * hardfault_handler.c — ClearBitPatch HardFault recovery handler.
+ * hardfault_handler.c — MorphPatch HardFault recovery handler.
  *
  * Overrides the weak default HardFault_Handler from the nRF52 startup file.
- * When a flash-write failure in clearbit_patch_apply() triggers a deliberate
- * HardFault (via UDF #0), this handler retries the write one last time.
- * If the write still fails, the stacked PC is redirected to the fix function
- * (fun2) so execution continues through the patched code path despite the
- * flash programming error.
+ * When a flash-write failure in morph_patch_apply()/morph_patch_unapply()
+ * triggers a deliberate HardFault, this handler retries the write one last time.
+ * If the write still fails, the stacked PC is redirected to the pre-selected
+ * fallback function (fun2 on apply / fun1 on unapply) so execution can
+ * continue despite the flash programming error.
  */
 #include <stdint.h>
-#include "clearbit_patch.h"
+#include "morph_patch.h"
 
 /*
  * Cortex-M4 exception stack frame (8 words, low to high address):
@@ -20,7 +20,7 @@
  */
 
 void HardFault_Handler_C(uint32_t *stacked_frame) {
-    uintptr_t redirect = clearbit_patch_hardfault_recover();
+    uintptr_t redirect = morph_patch_hardfault_recover();
 
     if (redirect != 0) {
         stacked_frame[6] = (uint32_t)redirect;

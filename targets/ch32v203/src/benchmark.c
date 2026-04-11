@@ -328,32 +328,32 @@ void benchmark_run_and_print(void)
 }
 
 static void benchmark_print_compare_row(const char *label,
-                                        uint64_t clearbit_cycles,
+                                        uint64_t morph_cycles,
                                         uint64_t erase_rewrite_cycles)
 {
-    char clearbit_buf[24];
+    char morph_buf[24];
     char erase_rewrite_buf[24];
     char delta_buf[24];
 
-    format_cycles(clearbit_buf, sizeof(clearbit_buf), clearbit_cycles);
+    format_cycles(morph_buf, sizeof(morph_buf), morph_cycles);
     format_cycles(erase_rewrite_buf, sizeof(erase_rewrite_buf), erase_rewrite_cycles);
-    format_cycles_delta(delta_buf, sizeof(delta_buf), clearbit_cycles, erase_rewrite_cycles);
+    format_cycles_delta(delta_buf, sizeof(delta_buf), morph_cycles, erase_rewrite_cycles);
 
     console_printf(
-        "%-14s clearbit=%-12s erase-rewr=%-12s delta=%s\r\n",
+        "%-14s morph=%-15s erase-rewr=%-12s delta=%s\r\n",
         label,
-        clearbit_buf,
+        morph_buf,
         erase_rewrite_buf,
         delta_buf);
 }
 
-bool benchmark_compare_run(patch_txn_benchmark_result_t *clearbit_result,
+bool benchmark_compare_run(patch_txn_benchmark_result_t *morph_result,
                            patch_txn_benchmark_result_t *erase_rewrite_result)
 {
-    const patch_scheme_ops_t *clearbit_scheme = patch_scheme_default();
+    const patch_scheme_ops_t *morph_scheme = patch_scheme_default();
     const patch_scheme_ops_t *erase_rewrite_scheme = patch_scheme_cve2024_2212_direct();
 
-    if ((clearbit_result == NULL) || (erase_rewrite_result == NULL)) {
+    if ((morph_result == NULL) || (erase_rewrite_result == NULL)) {
         return false;
     }
 
@@ -361,25 +361,25 @@ bool benchmark_compare_run(patch_txn_benchmark_result_t *clearbit_result,
         return false;
     }
 
-    if ((clearbit_scheme == NULL) || (erase_rewrite_scheme == NULL) ||
-        (clearbit_scheme->demo_can_run == NULL) || (erase_rewrite_scheme->demo_can_run == NULL)) {
+    if ((morph_scheme == NULL) || (erase_rewrite_scheme == NULL) ||
+        (morph_scheme->demo_can_run == NULL) || (erase_rewrite_scheme->demo_can_run == NULL)) {
         return false;
     }
 
-    if (!clearbit_scheme->demo_can_run() || !erase_rewrite_scheme->demo_can_run()) {
+    if (!morph_scheme->demo_can_run() || !erase_rewrite_scheme->demo_can_run()) {
         return false;
     }
 
     *erase_rewrite_result = benchmark_run_scheme(erase_rewrite_scheme);
-    *clearbit_result = benchmark_run_scheme(clearbit_scheme);
+    *morph_result = benchmark_run_scheme(morph_scheme);
     return true;
 }
 
 void benchmark_compare_run_and_print(void)
 {
-    const patch_scheme_ops_t *clearbit_scheme = patch_scheme_default();
+    const patch_scheme_ops_t *morph_scheme = patch_scheme_default();
     const patch_scheme_ops_t *erase_rewrite_scheme = patch_scheme_cve2024_2212_direct();
-    patch_txn_benchmark_result_t clearbit_result;
+    patch_txn_benchmark_result_t morph_result;
     patch_txn_benchmark_result_t erase_rewrite_result;
 
     if (cve_target_get_current() != CVE_TARGET_CVE2024_2212) {
@@ -387,7 +387,7 @@ void benchmark_compare_run_and_print(void)
         return;
     }
 
-    if (!benchmark_compare_run(&clearbit_result, &erase_rewrite_result)) {
+    if (!benchmark_compare_run(&morph_result, &erase_rewrite_result)) {
         console_puts("[-] benchcmp requires both scheme slots to be pristine. Reset/reflash before rerunning.\r\n");
         return;
     }
@@ -395,18 +395,18 @@ void benchmark_compare_run_and_print(void)
     console_printf(
         "\r\n=== Benchmark Compare [%s] ===\r\n",
         cve_target_name(cve_target_get_current()));
-    console_printf("[scheme-a] %s\r\n", benchmark_scheme_name(clearbit_scheme));
-    benchmark_print_scheme(clearbit_scheme, &clearbit_result);
+    console_printf("[scheme-a] %s\r\n", benchmark_scheme_name(morph_scheme));
+    benchmark_print_scheme(morph_scheme, &morph_result);
     console_printf("[scheme-b] %s\r\n", benchmark_scheme_name(erase_rewrite_scheme));
     benchmark_print_scheme(erase_rewrite_scheme, &erase_rewrite_result);
 
     console_puts("\r\n=== Compare Summary ===\r\n");
-    console_puts("[delta] erase-rewrite - clearbit\r\n");
-    benchmark_print_compare_row("baseline", clearbit_result.t_base_cycles, erase_rewrite_result.t_base_cycles);
-    benchmark_print_compare_row("patch_only", clearbit_result.t_patch_cycles, erase_rewrite_result.t_patch_cycles);
-    benchmark_print_compare_row("apply+fix1", clearbit_result.t_fix_first_cycles, erase_rewrite_result.t_fix_first_cycles);
-    benchmark_print_compare_row("patched_100", clearbit_result.t_fix_cycles, erase_rewrite_result.t_fix_cycles);
-    benchmark_print_compare_row("steady", clearbit_result.t_steady_cycles, erase_rewrite_result.t_steady_cycles);
-    benchmark_print_compare_row("unpatch+call", clearbit_result.t_unfix_cycles, erase_rewrite_result.t_unfix_cycles);
-    benchmark_print_compare_row("roundtrip", clearbit_result.t_roundtrip_cycles, erase_rewrite_result.t_roundtrip_cycles);
+    console_puts("[delta] erase-rewrite - morph\r\n");
+    benchmark_print_compare_row("baseline", morph_result.t_base_cycles, erase_rewrite_result.t_base_cycles);
+    benchmark_print_compare_row("patch_only", morph_result.t_patch_cycles, erase_rewrite_result.t_patch_cycles);
+    benchmark_print_compare_row("apply+fix1", morph_result.t_fix_first_cycles, erase_rewrite_result.t_fix_first_cycles);
+    benchmark_print_compare_row("patched_100", morph_result.t_fix_cycles, erase_rewrite_result.t_fix_cycles);
+    benchmark_print_compare_row("steady", morph_result.t_steady_cycles, erase_rewrite_result.t_steady_cycles);
+    benchmark_print_compare_row("unpatch+call", morph_result.t_unfix_cycles, erase_rewrite_result.t_unfix_cycles);
+    benchmark_print_compare_row("roundtrip", morph_result.t_roundtrip_cycles, erase_rewrite_result.t_roundtrip_cycles);
 }

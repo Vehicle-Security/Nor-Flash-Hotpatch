@@ -173,7 +173,7 @@ static bool parse_scheme_name(const char *text, patch_scheme_t *scheme) {
         return false;
     }
 
-    if (strcmp(text, "legacy") == 0 || strcmp(text, "clearbitpatch") == 0) {
+    if (strcmp(text, "legacy") == 0 || strcmp(text, "morphpatch") == 0) {
         *scheme = PATCH_SCHEME_LEGACY;
         return true;
     }
@@ -256,7 +256,7 @@ static void run_demo_for_scheme(patch_scheme_t scheme) {
 
 void console_print_help(void) {
     console_puts(
-        "commands: help, mode legacy|clearbitpatch|rapid|hera|autopatch, "
+        "commands: help, mode morphpatch|rapid|hera|autopatch, "
         "target cve2024-2212|cve2025-1674|cve2025-12899, demo, bench, compare, call, patch, unpatch, status\r\n");
 }
 

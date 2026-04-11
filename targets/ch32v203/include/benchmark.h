@@ -29,7 +29,7 @@ typedef struct {
 patch_txn_benchmark_result_t benchmark_run(void);
 void benchmark_print(const patch_txn_benchmark_result_t *result);
 void benchmark_run_and_print(void);
-bool benchmark_compare_run(patch_txn_benchmark_result_t *clearbit_result,
+bool benchmark_compare_run(patch_txn_benchmark_result_t *morph_result,
                            patch_txn_benchmark_result_t *erase_jump_result);
 void benchmark_compare_run_and_print(void);
 

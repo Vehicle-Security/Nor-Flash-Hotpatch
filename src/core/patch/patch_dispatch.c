@@ -1,10 +1,10 @@
 #include "patch_control.h"
 
-#include "clearbit_patch.h"
+#include "morph_patch.h"
 #include "ports/common/platform_port.h"
 
 const char *patch_scheme_name(void) {
-    return "ClearBitPatch";
+    return "MorphPatch";
 }
 
 int patch_call(void) {
@@ -16,7 +16,7 @@ bool patch_apply(void) {
 
     platform_victim_suspend();
     platform_lock_patch_region();
-    applied = clearbit_patch_apply();
+    applied = morph_patch_apply();
     platform_unlock_patch_region();
     platform_victim_resume();
 
@@ -26,23 +26,23 @@ bool patch_apply(void) {
 void patch_unapply(void) {
     platform_victim_suspend();
     platform_lock_patch_region();
-    clearbit_patch_unapply();
+    morph_patch_unapply();
     platform_unlock_patch_region();
     platform_victim_resume();
 }
 
 bool patch_is_active(void) {
-    return clearbit_patch_is_active();
+    return morph_patch_is_active();
 }
 
 bool patch_demo_can_run(void) {
-    return clearbit_patch_demo_can_run();
+    return morph_patch_demo_can_run();
 }
 
 void print_patch_status(void) {
-    clearbit_patch_print_status();
+    morph_patch_print_status();
 }
 
 memory_cost_t patch_memory_cost(void) {
-    return clearbit_patch_memory_cost();
+    return morph_patch_memory_cost();
 }

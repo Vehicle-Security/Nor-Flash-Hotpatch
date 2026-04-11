@@ -43,7 +43,7 @@ static void freertos_patch_task(void *argument) {
     bool patch_applied = patch_is_active();
 
     if (patch_applied) {
-        platform_console_write("[patch] ClearBitPatch already active.\r\n");
+        platform_console_write("[patch] MorphPatch already active.\r\n");
         print_patch_status();
     }
 
@@ -51,7 +51,7 @@ static void freertos_patch_task(void *argument) {
         bool pressed = bsp_board_button_state_get(BSP_BOARD_BUTTON_0);
 
         if (pressed && !previous_pressed && !patch_applied) {
-            platform_console_write("[patch] S1 pressed. Applying ClearBitPatch...\r\n");
+            platform_console_write("[patch] S1 pressed. Applying MorphPatch...\r\n");
 
             if (patch_apply()) {
                 patch_applied = true;
@@ -88,7 +88,7 @@ bool freertos_port_init(void) {
     }
 
     platform_console_write(
-        "\r\nClearBitPatch FreeRTOS LED demo ready.\r\n"
+        "\r\nMorphPatch FreeRTOS LED demo ready.\r\n"
         "Board outputs without extra wiring: D1-D4 LEDs, RTT log over the existing debug USB link.\r\n"
         "Demo wiring-free indicators: D1 blinks in the original path, press S1 to hot-patch, then D2 stays on while D1 keeps the same blink cadence.\r\n");
     print_patch_status();

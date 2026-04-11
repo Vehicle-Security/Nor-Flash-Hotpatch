@@ -1,16 +1,16 @@
 #include <stdbool.h>
 
-#ifdef CLEARBIT_LITEOS_NATIVE
+#ifdef MORPH_LITEOS_NATIVE
 #include "los_task.h"
 #include "los_tick.h"
 #else
 #include "bsp.h"
-#include "core/app/clearbit_app.h"
+#include "core/app/morph_app.h"
 #endif
 
 #include "liteos_port.h"
 
-#ifdef CLEARBIT_LITEOS_NATIVE
+#ifdef MORPH_LITEOS_NATIVE
 static UINT32 delay_ticks_1s(void) {
     UINT32 ticks = LOS_MS2Tick(1000u);
 
@@ -42,7 +42,7 @@ int main(void) {
         return -1;
     }
 
-    clearbit_app_run_forever();
+    morph_app_run_forever();
     return -1;
 }
 #endif

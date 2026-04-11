@@ -1,5 +1,5 @@
 /*
- * console.c — RTT-based interactive console for ClearBitPatch demo.
+ * console.c — RTT-based interactive console for MorphPatch demo.
  *
  * Provides commands: help, target, call, patch, unpatch, status, demo, bench.
  * All I/O is routed through the platform_port abstraction so the same console

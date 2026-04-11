@@ -56,7 +56,7 @@ static bool parse_u32_string(const char *text, uint32_t *value) {
 void platform_console_init(void) {
     SEGGER_RTT_Init();
     SEGGER_RTT_SetFlagsUpBuffer(0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
-    SEGGER_RTT_WriteString(0, "\r\nRTT console ready. (ClearBitPatch Demo)\r\n");
+    SEGGER_RTT_WriteString(0, "\r\nRTT console ready. (MorphPatch Demo)\r\n");
 }
 
 void platform_console_write(const char *text) {

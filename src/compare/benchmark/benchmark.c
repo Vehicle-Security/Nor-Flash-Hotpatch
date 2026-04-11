@@ -59,7 +59,7 @@ static const benchmark_scheme_ops_t g_bench_schemes[] = {
         .bench_dispatch_only = NULL,
         .bench_patch_exec_only = NULL,
         .trigger_is_approx_when_missing = true,
-        .pass_is_approx_when_arg_ignored = true,
+        .pass_is_approx_when_arg_ignored = false,
         .memory_cost = hera_memory_cost,
     },
     {
@@ -81,20 +81,20 @@ static const benchmark_scheme_ops_t g_bench_schemes[] = {
     },
     {
         .scheme = PATCH_SCHEME_LEGACY,
-        .table_name = "ClearBitPatch",
+        .table_name = "MorphPatch",
         .ops = {
-            .name = "clearbit",
-            .install = clearbit_patch_install,
-            .uninstall = clearbit_patch_unapply,
-            .is_active = clearbit_patch_is_active,
-            .invoke = clearbit_invoke,
+            .name = "morph",
+            .install = morph_patch_install,
+            .uninstall = morph_patch_unapply,
+            .is_active = morph_patch_is_active,
+            .invoke = morph_invoke,
         },
         .bench_trigger_only = NULL,
         .bench_dispatch_only = NULL,
         .bench_patch_exec_only = NULL,
         .trigger_is_approx_when_missing = true,
-        .pass_is_approx_when_arg_ignored = true,
-        .memory_cost = clearbit_memory_cost,
+        .pass_is_approx_when_arg_ignored = false,
+        .memory_cost = morph_memory_cost,
     },
 };
 
@@ -431,14 +431,17 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
     prepare_benign_runtime_regs(&br0, &br1, &br2, &br3);
     result.pass_is_approx = entry->pass_is_approx_when_arg_ignored;
     prepare_scheme_baseline(entry);
+    cve_target_clear_benchmark_override();
     app_set_exec_mode(APP_EXEC_MODE_BENCHMARK);
 
     if (!measure_invoke_once(&entry->ops, r0, r1, r2, r3, &result.t_background, &result.baseline_ret_code)) {
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
     result.baseline_ok = patch_result_is_vulnerable(result.baseline_ret_code);
     if (!result.baseline_ok) {
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         SEGGER_RTT_printf(0,
             "[-] %s baseline is not vulnerable under benchmark input, ret=%d.\r\n",
@@ -448,6 +451,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
     }
 
     if (!measure_invoke_once(&entry->ops, br0, br1, br2, br3, NULL, &result.benign_baseline_ret_code)) {
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
@@ -456,6 +460,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
         if (entry->ops.uninstall != NULL) {
             entry->ops.uninstall();
         }
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
@@ -465,6 +470,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
         if (cleanup_needed && entry->ops.uninstall != NULL) {
             entry->ops.uninstall();
         }
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
@@ -474,6 +480,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
         if (cleanup_needed && entry->ops.uninstall != NULL) {
             entry->ops.uninstall();
         }
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
@@ -511,6 +518,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
     }
 
     if (!measure_uninstall(&entry->ops, &result.t_uninstall)) {
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
@@ -518,6 +526,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
     result.t_roundtrip = cycles_add3(result.t_install, result.t_first_fix, result.t_uninstall);
 
     if (!measure_invoke_once(&entry->ops, r0, r1, r2, r3, NULL, &post_uninstall_ret)) {
+        cve_target_clear_benchmark_override();
         app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
         return result;
     }
@@ -525,6 +534,7 @@ patch_txn_benchmark_result_t benchmark_run_for_scheme(patch_scheme_t scheme) {
     result.uninstall_ok = patch_result_is_vulnerable(result.uninstalled_ret_code);
     result.available = true;
 
+    cve_target_clear_benchmark_override();
     app_set_exec_mode(APP_EXEC_MODE_INTERACTIVE);
     return result;
 }
@@ -637,10 +647,10 @@ static void print_runtime_notes(const patch_scheme_t *schemes,
     console_puts("[note] RapidPatch excludes eBPF rewrite/verifier/JIT/offline generation; runtime path is fixed patch point + dispatcher + VM.\r\n");
     console_puts("[note] AutoPatch excludes offline auto-generation/LLVM analysis; runtime path is static trampoline + dispatcher + hotpatch body.\r\n");
     if (has_trigger_approx) {
-        console_puts("[note] For ClearBitPatch/HERA, T_trigger_only is a closest-possible approximation because trigger and payload are tightly coupled in hardware redirection path.\r\n");
+        console_puts("[note] For MorphPatch/HERA, T_trigger_only is a closest-possible approximation because trigger and payload are tightly coupled in hardware redirection path.\r\n");
     }
     if (has_pass_approx) {
-        console_puts("[note] For ClearBitPatch/HERA, T_pass_only is a closest-possible measurement because their invoke path does not currently consume unified r0..r3 runtime args.\r\n");
+        console_puts("[note] For MorphPatch/HERA, T_pass_only is a closest-possible measurement because their invoke path does not currently consume unified r0..r3 runtime args.\r\n");
     }
     console_puts("[note] T_pass_only is measured with patch installed and benign input; path still goes through full runtime invoke path and should continue instead of DROP/REDIRECT.\r\n");
     (void)schemes;

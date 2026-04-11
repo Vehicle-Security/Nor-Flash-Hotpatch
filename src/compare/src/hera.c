@@ -186,10 +186,7 @@ bool hera_patch_is_active(void) {
 }
 
 int hera_invoke(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3) {
-    (void)r0;
-    (void)r1;
-    (void)r2;
-    (void)r3;
+    cve_target_set_benchmark_override_from_regs(r0, r1, r2, r3);
     return fun1();
 }
 

@@ -1,5 +1,5 @@
 /*
- * platform_port.c — FreeRTOS platform port for ClearBitPatch.
+ * platform_port.c — FreeRTOS platform port for MorphPatch.
  *
  * Runs two tasks: a victim task that periodically calls the patch slot
  * (simulating real workload), and a control task that handles the RTT
@@ -16,7 +16,7 @@
 #include "task.h"
 #include "SEGGER_RTT.h"
 
-#include "core/app/clearbit_app.h"
+#include "core/app/morph_app.h"
 #include "freertos_port.h"
 
 int SEGGER_RTT_vprintf(unsigned BufferIndex, const char *sFormat, va_list *pParamList);
@@ -97,10 +97,10 @@ static bool parse_u32_string(const char *text, uint32_t *value) {
 static void freertos_control_task(void *argument) {
     (void)argument;
 
-    clearbit_app_boot();
+    morph_app_boot();
 
     for (;;) {
-        clearbit_app_process_once();
+        morph_app_process_once();
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
@@ -180,7 +180,7 @@ bool freertos_port_start(void) {
 void platform_console_init(void) {
     SEGGER_RTT_Init();
     SEGGER_RTT_SetFlagsUpBuffer(0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
-    SEGGER_RTT_WriteString(0, "\r\nRTT console ready. (ClearBitPatch Demo)\r\n");
+    SEGGER_RTT_WriteString(0, "\r\nRTT console ready. (MorphPatch Demo)\r\n");
 }
 
 void platform_console_write(const char *text) {

@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "SEGGER_RTT.h"
-#include "core/app/clearbit_app.h"
+#include "core/app/morph_app.h"
 #include "liteos_port.h"
 
 int SEGGER_RTT_vprintf(unsigned BufferIndex, const char *sFormat, va_list *pParamList);
@@ -58,7 +58,7 @@ static bool parse_u32_string(const char *text, uint32_t *value) {
     return true;
 }
 
-#ifdef CLEARBIT_LITEOS_NATIVE
+#ifdef MORPH_LITEOS_NATIVE
 
 #include <string.h>
 
@@ -112,10 +112,10 @@ static void drain_sem(UINT32 sem_handle) {
 static VOID *liteos_control_task(void *argument) {
     (void)argument;
 
-    clearbit_app_boot();
+    morph_app_boot();
 
     for (;;) {
-        clearbit_app_process_once();
+        morph_app_process_once();
         sleep_1ms();
     }
 }
@@ -357,7 +357,7 @@ void platform_victim_resume(void) {
 void platform_console_init(void) {
     SEGGER_RTT_Init();
     SEGGER_RTT_SetFlagsUpBuffer(0, SEGGER_RTT_MODE_NO_BLOCK_TRIM);
-    SEGGER_RTT_WriteString(0, "\r\nLiteOS console ready. (ClearBitPatch Demo)\r\n");
+    SEGGER_RTT_WriteString(0, "\r\nLiteOS console ready. (MorphPatch Demo)\r\n");
 }
 
 void platform_console_write(const char *text) {

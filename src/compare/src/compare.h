@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "core/patch/clearbit_patch.h"
+#include "core/patch/morph_patch.h"
 #include "core/platform/memory_cost.h"
 
 typedef struct {
@@ -15,10 +15,10 @@ typedef struct {
     int (*invoke)(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3);
 } scheme_ops_t;
 
-/* clearbit_patch_unapply / clearbit_patch_is_active / patch_slot
-   are provided by core/patch/clearbit_patch.h above. */
-bool clearbit_patch_install(void);
-int clearbit_invoke(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3);
+/* morph_patch_unapply / morph_patch_is_active / patch_slot
+   are provided by core/patch/morph_patch.h above. */
+bool morph_patch_install(void);
+int morph_invoke(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3);
 
 bool autopatch_is_ready(void);
 bool autopatch_patch_install(void);
@@ -49,7 +49,7 @@ uint32_t rapid_bench_trigger_only(void);
 uint32_t rapid_bench_dispatch_only(uint32_t active_patch_count);
 uint32_t rapid_bench_patch_exec_only(void);
 
-memory_cost_t clearbit_memory_cost(void);
+memory_cost_t morph_memory_cost(void);
 memory_cost_t rapid_memory_cost(void);
 memory_cost_t hera_memory_cost(void);
 memory_cost_t autopatch_memory_cost(void);

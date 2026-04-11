@@ -4,7 +4,7 @@
 #include <unistd.h>
 #else
 #include "bsp.h"
-#include "core/app/clearbit_app.h"
+#include "core/app/morph_app.h"
 #endif
 
 #include "nuttx_port.h"
@@ -38,7 +38,7 @@ int main(void) {
         return -1;
     }
 
-    clearbit_app_run_forever();
+    morph_app_run_forever();
     return -1;
 }
 #endif

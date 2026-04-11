@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "core/app/clearbit_app.h"
+#include "core/app/morph_app.h"
 
 typedef struct {
     void *control_thread;
@@ -15,10 +15,10 @@ static void zephyr_control_thread_entry(void *arg1, void *arg2, void *arg3) {
     (void)arg2;
     (void)arg3;
 
-    clearbit_app_boot();
+    morph_app_boot();
 
     for (;;) {
-        clearbit_app_process_once();
+        morph_app_process_once();
         /* TODO: move to Zephyr shell callbacks or another chosen command backend. */
     }
 }
@@ -31,7 +31,7 @@ static void zephyr_victim_thread_entry(void *arg1, void *arg2, void *arg3) {
     for (;;) {
         /*
          * TODO: host the victim workload in a normal Zephyr thread.
-         * Keep ClearBitPatch as an in-place function redirect with no payload thread.
+         * Keep MorphPatch as an in-place function redirect with no payload thread.
          */
     }
 }

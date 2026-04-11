@@ -5,7 +5,7 @@
 static const cve_target_profile_t g_patch_profile = {
     .banner = "\r\n=== [PATCHED] Selected Vulnerability Fix ===\r\n",
     .status_line = "Status: selected vulnerability fix is ENABLED.\r\n",
-    .reject_prefix = "ClearBitPatch-RV",
+    .reject_prefix = "MorphPatch-RV",
     .block_line = "[PATCH] Fixed code blocked the crafted attack input.\r\n",
     .abort_line = "[PATCH] Returning to shell without entering vulnerable effect.\r\n",
     .done_line = "\r\n[*] Patched path finished. Returning to shell...\r\n",

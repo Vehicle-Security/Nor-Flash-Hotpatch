@@ -2,13 +2,13 @@
 #include "../console/console.h"
 #include "cve_target.h"
 
-static const cve_target_profile_t g_clearbit_patch_profile = {
-    .banner = "\r\n=== [ClearBitPatch PATCHED] Selected Vulnerability Fix ===\r\n",
-    .status_line = "Status: ClearBitPatch replacement fix for the selected vulnerability is ENABLED.\r\n",
-    .reject_prefix = "ClearBitPatch",
-    .block_line = "[ClearBitPatch] Fixed code blocked the crafted attack input.\r\n",
-    .abort_line = "[ClearBitPatch] Returning to shell without entering the vulnerable path.\r\n",
-    .done_line = "\r\n[*] ClearBitPatch patched path finished. Returning to shell...\r\n",
+static const cve_target_profile_t g_morph_patch_profile = {
+    .banner = "\r\n=== [MorphPatch PATCHED] Selected Vulnerability Fix ===\r\n",
+    .status_line = "Status: MorphPatch replacement fix for the selected vulnerability is ENABLED.\r\n",
+    .reject_prefix = "MorphPatch",
+    .block_line = "[MorphPatch] Fixed code blocked the crafted attack input.\r\n",
+    .abort_line = "[MorphPatch] Returning to shell without entering the vulnerable path.\r\n",
+    .done_line = "\r\n[*] MorphPatch patched path finished. Returning to shell...\r\n",
     .apply_fix = true,
 };
 
@@ -26,7 +26,7 @@ static __attribute__((used)) int fun2_impl(void) {
         console_puts("[DEMO] Loaded attack input for the selected vulnerability.\r\n");
     }
 
-    return cve_target_run(&input, verbose, &g_clearbit_patch_profile);
+    return cve_target_run(&input, verbose, &g_morph_patch_profile);
 }
 
 __attribute__((naked, noinline, used, section(".hotpatch_page.entry"), aligned(2)))

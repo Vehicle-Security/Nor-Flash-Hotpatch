@@ -51,6 +51,8 @@ void cve_target_set_current(cve_target_t target);
 cve_target_t cve_target_get_current(void);
 void cve_target_print_status(void);
 
+void cve_target_set_benchmark_override_from_regs(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3);
+void cve_target_clear_benchmark_override(void);
 void cve_target_get_attack_inputs(cve_target_input_t *input);
 bool cve_target_fetch_inputs(cve_target_input_t *input, bool *auto_fed);
 void cve_target_print_attack_input(const cve_target_input_t *input);

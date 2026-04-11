@@ -2,7 +2,7 @@
 
 #include "compare/src/compare.h"
 
-#include "core/patch/clearbit_patch.h"
+#include "core/patch/morph_patch.h"
 #include "core/target/targets.h"
 
 const char *patch_scheme_name(patch_scheme_t scheme) {
@@ -15,7 +15,7 @@ const char *patch_scheme_name(patch_scheme_t scheme) {
     if (scheme == PATCH_SCHEME_AUTOPATCH) {
         return "autopatch";
     }
-    return "legacy";
+    return "morphpatch";
 }
 
 int patch_call(patch_scheme_t scheme) {
@@ -41,7 +41,7 @@ bool patch_apply(patch_scheme_t scheme) {
     if (scheme == PATCH_SCHEME_AUTOPATCH) {
         return autopatch_patch_install();
     }
-    return clearbit_patch_apply();
+    return morph_patch_apply();
 }
 
 void patch_unapply(patch_scheme_t scheme) {
@@ -52,7 +52,7 @@ void patch_unapply(patch_scheme_t scheme) {
     } else if (scheme == PATCH_SCHEME_AUTOPATCH) {
         autopatch_patch_unapply();
     } else {
-        clearbit_patch_unapply();
+        morph_patch_unapply();
     }
 }
 
@@ -66,7 +66,7 @@ bool patch_is_active(patch_scheme_t scheme) {
     if (scheme == PATCH_SCHEME_AUTOPATCH) {
         return autopatch_patch_is_active();
     }
-    return clearbit_patch_is_active();
+    return morph_patch_is_active();
 }
 
 bool patch_demo_can_run(patch_scheme_t scheme) {
@@ -79,7 +79,7 @@ bool patch_demo_can_run(patch_scheme_t scheme) {
     if (scheme == PATCH_SCHEME_AUTOPATCH) {
         return autopatch_is_ready();
     }
-    return clearbit_patch_demo_can_run();
+    return morph_patch_demo_can_run();
 }
 
 bool patch_supports_online_toggle(patch_scheme_t scheme) {
@@ -103,7 +103,7 @@ void print_patch_status(patch_scheme_t scheme) {
         return;
     }
 
-    clearbit_patch_print_status();
+    morph_patch_print_status();
 }
 
 void print_all_patch_status(void) {
