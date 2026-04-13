@@ -1,15 +1,20 @@
 /*
- * morph_patch.c — MorphPatch: NOR-flash hotpatching via monotonic bit-clear.
+ * morph_patch.c - MorphPatch: NOR-flash hotpatching via monotonic bit-clear.
  *
  * NOR flash allows only 1->0 bit transitions without a sector erase.
- * MorphPatch exploits this by pre-filling a patch slot with 0xE7FF
- * (Thumb infinite-loop) and later clearing selected bits to form a
- * 16-bit Thumb B (branch) instruction that redirects to the fix function.
+ * MorphPatch now supports two monotonic dispatch paths from the same factory
+ * image:
  *
- * Write-verify-retry logic ensures the flash word was programmed correctly.
- * If verification fails after retry, HardFault is triggered so the
- * exception handler can attempt recovery or redirect execution to the
- * fix function as a last resort.
+ * 1. direct-branch path: 0xE7FF -> Thumb B(fun2) -> 0xE000
+ * 2. fault-dispatch path: 0xE7FF -> 0x4700 -> 0x4600
+ *
+ * The direct-branch path is the original implementation and remains the
+ * default. The new fault-dispatch path uses "bx r0" to raise a controlled
+ * fault, and the fault handler then redirects execution to the fix function.
+ *
+ * The fault-path entry preserves the caller's original R0 in R12 before
+ * forcing R0 to a faulting value, and the fault handler restores stacked R0
+ * from stacked R12 before redirecting directly to fun2.
  */
 #include "morph_patch.h"
 
@@ -23,13 +28,34 @@
 extern uint32_t __hotpatch_page_start__;
 extern uint32_t __hotpatch_page_end__;
 
-#define MORPH_PATCH_ORIGINAL_HALFWORD 0xE7FFu  /* Thumb: b . (infinite loop) */
-#define MORPH_PATCH_UNPATCH_HALFWORD  0xE000u  /* Thumb: b +0 (fall through) */
+#define MORPH_PATCH_ORIGINAL_HALFWORD       0xE7FFu  /* Thumb: b.n +2 */
+#define MORPH_PATCH_DIRECT_UNPATCH_HALFWORD 0xE000u  /* Thumb: b.n +0 */
+#define MORPH_PATCH_FAULT_ACTIVE_HALFWORD   0x4700u  /* Thumb: bx r0 */
+#define MORPH_PATCH_FAULT_UNPATCH_HALFWORD  0x4600u  /* Thumb: mov r0, r0 */
 
-/* ---- HardFault recovery context (read by hardfault_handler.c) ---- */
-volatile uintptr_t g_patch_recovery_target = 0;
-volatile uint16_t  g_patch_recovery_instr  = 0;
-volatile bool      g_patch_recovery_pending = false;
+/* Fault-dispatch context read by hardfault_handler.c. */
+volatile uintptr_t g_patch_dispatch_target = 0;
+volatile bool      g_patch_dispatch_pending = false;
+
+static volatile morph_patch_path_t g_morph_patch_path = MORPH_PATCH_PATH_DIRECT;
+
+static const char *morph_patch_path_name_internal(morph_patch_path_t path) {
+    return (path == MORPH_PATCH_PATH_FAULT) ? "fault-dispatch" : "direct-branch";
+}
+
+void morph_patch_set_path(morph_patch_path_t path) {
+    g_morph_patch_path = (path == MORPH_PATCH_PATH_FAULT)
+        ? MORPH_PATCH_PATH_FAULT
+        : MORPH_PATCH_PATH_DIRECT;
+}
+
+morph_patch_path_t morph_patch_get_path(void) {
+    return g_morph_patch_path;
+}
+
+const char *morph_patch_path_name(void) {
+    return morph_patch_path_name_internal(g_morph_patch_path);
+}
 
 static uintptr_t patch_slot_addr(void) {
     return ((uintptr_t)patch_slot) & ~(uintptr_t)1u;
@@ -53,7 +79,7 @@ static void invalidate_code_cache(void) {
 #endif
 }
 
-static bool build_morph_patch_branch_instr(uint16_t *out_instr, bool verbose) {
+static bool build_direct_branch_instr(uint16_t *out_instr, bool verbose) {
     uintptr_t from = patch_slot_addr();
     uintptr_t to = ((uintptr_t)fun2) & ~(uintptr_t)1u;
     int32_t diff = (int32_t)to - (int32_t)(from + 4u);
@@ -74,9 +100,17 @@ static bool build_morph_patch_branch_instr(uint16_t *out_instr, bool verbose) {
         return false;
     }
 
-    /* Encode 16-bit Thumb B: opcode 0xE000 | signed 11-bit offset */
     *out_instr = (uint16_t)(0xE000u | (((uint32_t)(diff >> 1)) & 0x07FFu));
     return true;
+}
+
+static bool build_selected_apply_instr(uint16_t *out_instr, bool verbose) {
+    if (g_morph_patch_path == MORPH_PATCH_PATH_FAULT) {
+        *out_instr = MORPH_PATCH_FAULT_ACTIVE_HALFWORD;
+        return true;
+    }
+
+    return build_direct_branch_instr(out_instr, verbose);
 }
 
 static void write_patch_halfword(uint16_t instr) {
@@ -126,52 +160,81 @@ static uint16_t read_patch_halfword(void) {
     return (uint16_t)(value >> 16);
 }
 
+static void morph_patch_dispatch_arm(int (*target_fn)(void)) {
+    g_patch_dispatch_target = ((uintptr_t)target_fn) | 1u;
+    g_patch_dispatch_pending = true;
+    __DSB();
+    __ISB();
+}
+
+static void morph_patch_dispatch_disarm(void) {
+    g_patch_dispatch_pending = false;
+    g_patch_dispatch_target = 0;
+    __DSB();
+    __ISB();
+}
+
 /*
- * Trigger HardFault using a regular invalid memory write instead of illegal
- * opcodes (some boards may lock up on direct undefined-instruction traps).
+ * patch_slot starts with one mutable halfword followed by the original
+ * fall-through body:
+ *   [0] mutable halfword (factory 0xE7FF / direct-branch / fault-trigger / unpatch)
+ *   [1] nop
+ *   [2] b   fun1
+ *
+ * Only the fault wrapper preserves R0 in R12 and then clears R0 so
+ * 0x4700 ("bx r0") faults in a deterministic way.
  */
-__attribute__((noreturn)) static void morph_force_hardfault(void) {
-    volatile uint32_t *fault_addr = (volatile uint32_t *)0xFFFFFFF0u;
-
-    *fault_addr = 0xDEADBEEFu;
-    __DSB();
-
-    while (1) {
-    }
+__attribute__((naked, noinline)) int morph_patch_fault_entry(void) {
+    __asm volatile(
+        ".thumb          \n"
+        "mov   ip, r0    \n"
+        "movs  r0, #0    \n"
+        "b.w   patch_slot\n");
+    __builtin_unreachable();
 }
 
-static void morph_hardfault_recovery_trigger(uint16_t instr,
-                                             int (*target_fn)(void)) {
-    g_patch_recovery_target = ((uintptr_t)target_fn) | 1u;
-    g_patch_recovery_instr  = instr;
-    g_patch_recovery_pending = true;
-    __DSB();
-    morph_force_hardfault();
+void morph_patch_fault_begin(void) {
+    morph_patch_dispatch_arm(fun2);
 }
 
-uintptr_t morph_patch_hardfault_recover(void) {
-    if (!g_patch_recovery_pending) {
+void morph_patch_fault_end(void) {
+    morph_patch_dispatch_disarm();
+}
+
+static uintptr_t morph_patch_dispatch_fault_recover(uint32_t *stacked_frame) {
+    uintptr_t redirect = 0;
+
+    if (!g_patch_dispatch_pending) {
         return 0;
     }
-    g_patch_recovery_pending = false;
 
-    write_patch_halfword(g_patch_recovery_instr);
+    redirect = g_patch_dispatch_target;
+    morph_patch_dispatch_disarm();
 
-    uint16_t readback = read_patch_halfword();
-    if (readback == g_patch_recovery_instr) {
+    if (read_patch_halfword() != MORPH_PATCH_FAULT_ACTIVE_HALFWORD) {
         return 0;
     }
-    return g_patch_recovery_target;
+
+    /* Wrapper saved the caller's original R0 in R12 before forcing the fault. */
+    stacked_frame[0] = stacked_frame[4];
+
+    return redirect;
 }
 
-static bool morph_patch_program_with_guard(uint16_t target_instr,
-                                           int (*target_fn)(void),
-                                           const char *op_name) {
+uintptr_t morph_patch_fault_recover(uint32_t *stacked_frame) {
+    return morph_patch_dispatch_fault_recover(stacked_frame);
+}
+
+static bool morph_patch_halfword_can_reach(uint16_t current, uint16_t target) {
+    return (current & target) == target;
+}
+
+static bool morph_patch_program_halfword_retry(uint16_t target_instr,
+                                               const char *op_name) {
     uint16_t current = read_patch_halfword();
     uint16_t readback = 0;
 
-    /* NOR flash only supports 1->0. Verify every target-0 bit is still 1. */
-    if ((current & target_instr) != target_instr) {
+    if (!morph_patch_halfword_can_reach(current, target_instr)) {
         console_printf(
             "[-] Cannot %s without erase. current=0x%04X target=0x%04X\r\n",
             op_name,
@@ -182,7 +245,6 @@ static bool morph_patch_program_with_guard(uint16_t target_instr,
 
     write_patch_halfword(target_instr);
 
-    /* ---- verify ---- */
     readback = read_patch_halfword();
     if (readback == target_instr) {
         return true;
@@ -194,16 +256,11 @@ static bool morph_patch_program_with_guard(uint16_t target_instr,
         target_instr,
         readback);
 
-    /* Can further 1->0 fix the mismatch? */
-    if ((readback & target_instr) != target_instr) {
-        console_printf(
-            "[!] %s unrecoverable: need 0->1 transition. Entering HardFault recovery.\r\n",
-            op_name);
-        morph_hardfault_recovery_trigger(target_instr, target_fn);
+    if (!morph_patch_halfword_can_reach(readback, target_instr)) {
+        console_printf("[!] %s cannot retry without erase.\r\n", op_name);
         return false;
     }
 
-    /* Still possible via 1->0, retry once */
     console_printf("[!] %s retrying write (1->0 still possible)...\r\n", op_name);
     write_patch_halfword(target_instr);
     readback = read_patch_halfword();
@@ -212,36 +269,76 @@ static bool morph_patch_program_with_guard(uint16_t target_instr,
         return true;
     }
 
-    console_printf("[!] %s retry failed. Entering HardFault recovery.\r\n", op_name);
-    morph_hardfault_recovery_trigger(target_instr, target_fn);
+    console_printf("[!] %s retry failed.\r\n", op_name);
     return false;
 }
 
-bool morph_patch_apply(void) {
-    uint16_t branch_instr = 0;
+static uint16_t selected_unapply_halfword(void) {
+    uint16_t current = read_patch_halfword();
+    uint16_t direct_branch_instr = 0;
 
-    if (!build_morph_patch_branch_instr(&branch_instr, true)) {
+    if (current == MORPH_PATCH_FAULT_ACTIVE_HALFWORD
+        || current == MORPH_PATCH_FAULT_UNPATCH_HALFWORD) {
+        return MORPH_PATCH_FAULT_UNPATCH_HALFWORD;
+    }
+
+    if (build_direct_branch_instr(&direct_branch_instr, false)
+        && current == direct_branch_instr) {
+        return MORPH_PATCH_DIRECT_UNPATCH_HALFWORD;
+    }
+
+    return (g_morph_patch_path == MORPH_PATCH_PATH_FAULT)
+        ? MORPH_PATCH_FAULT_UNPATCH_HALFWORD
+        : MORPH_PATCH_DIRECT_UNPATCH_HALFWORD;
+}
+
+bool morph_patch_apply(void) {
+    uint16_t target_instr = 0;
+
+    if (build_selected_apply_instr(&target_instr, true)
+        && morph_patch_program_halfword_retry(target_instr, "patch apply")) {
+        return true;
+    }
+
+    if (g_morph_patch_path != MORPH_PATCH_PATH_DIRECT) {
         return false;
     }
 
-    return morph_patch_program_with_guard(branch_instr, fun2, "patch apply");
+    console_puts("[!] direct-branch apply failed. Falling back to fault-dispatch.\r\n");
+    if (!morph_patch_program_halfword_retry(
+            MORPH_PATCH_FAULT_ACTIVE_HALFWORD,
+            "patch apply fallback")) {
+        console_puts("[-] fault-dispatch fallback install failed.\r\n");
+        return false;
+    }
+
+    console_puts("[+] fault-dispatch fallback installed.\r\n");
+    return true;
 }
 
 void morph_patch_unapply(void) {
-    (void)morph_patch_program_with_guard(
-        MORPH_PATCH_UNPATCH_HALFWORD,
-        fun1,
+    (void)morph_patch_program_halfword_retry(
+        selected_unapply_halfword(),
         "patch unapply");
 }
 
 bool morph_patch_is_active(void) {
-    uint16_t branch_instr = 0;
+    uint16_t instr = read_patch_halfword();
+    uint16_t direct_branch_instr = 0;
 
-    if (!build_morph_patch_branch_instr(&branch_instr, false)) {
+    if (instr == MORPH_PATCH_FAULT_ACTIVE_HALFWORD) {
+        return instr == MORPH_PATCH_FAULT_ACTIVE_HALFWORD;
+    }
+
+    if (!build_direct_branch_instr(&direct_branch_instr, false)) {
         return false;
     }
 
-    return read_patch_halfword() == branch_instr;
+    return instr == direct_branch_instr;
+}
+
+bool morph_patch_current_slot_uses_fault_dispatch(void) {
+    return read_patch_halfword() == MORPH_PATCH_FAULT_ACTIVE_HALFWORD;
 }
 
 bool morph_patch_demo_can_run(void) {
@@ -250,19 +347,32 @@ bool morph_patch_demo_can_run(void) {
 
 void morph_patch_print_status(void) {
     uint16_t instr = read_patch_halfword();
-    uint16_t branch_instr = 0;
-    bool has_branch = build_morph_patch_branch_instr(&branch_instr, false);
+    uint16_t direct_branch_instr = 0;
+    bool has_direct_branch = build_direct_branch_instr(&direct_branch_instr, false);
 
+    console_printf("[MorphPatch] selected path: %s\r\n", morph_patch_path_name());
     console_printf("[MorphPatch] patch_slot first halfword: 0x%04X\r\n", instr);
 
-    if (has_branch && instr == branch_instr) {
-        console_puts("[MorphPatch] mode: redirect to fun2\r\n");
+    if (has_direct_branch && instr == direct_branch_instr) {
+        console_puts("[MorphPatch] slot state: direct-branch to fun2\r\n");
+    } else if (instr == MORPH_PATCH_FAULT_ACTIVE_HALFWORD) {
+        if (g_morph_patch_path == MORPH_PATCH_PATH_DIRECT) {
+            console_puts("[MorphPatch] slot state: fault-dispatch backup to fun2\r\n");
+        } else {
+            console_puts("[MorphPatch] slot state: fault-dispatch to fun2\r\n");
+        }
     } else if (instr == MORPH_PATCH_ORIGINAL_HALFWORD) {
-        console_puts("[MorphPatch] mode: original entry (fun1 path)\r\n");
-    } else if (instr == MORPH_PATCH_UNPATCH_HALFWORD) {
-        console_puts("[MorphPatch] mode: unpatched forward jump (fun1 path)\r\n");
+        console_puts("[MorphPatch] slot state: factory fall-through (fun1 path)\r\n");
+    } else if (instr == MORPH_PATCH_DIRECT_UNPATCH_HALFWORD) {
+        console_puts("[MorphPatch] slot state: direct-path unpatched (fun1 path)\r\n");
+    } else if (instr == MORPH_PATCH_FAULT_UNPATCH_HALFWORD) {
+        if (g_morph_patch_path == MORPH_PATCH_PATH_DIRECT) {
+            console_puts("[MorphPatch] slot state: fault-backup unpatched (fun1 path)\r\n");
+        } else {
+            console_puts("[MorphPatch] slot state: fault-path unpatched (fun1 path)\r\n");
+        }
     } else {
-        console_puts("[MorphPatch] mode: unknown\r\n");
+        console_puts("[MorphPatch] slot state: unknown\r\n");
     }
 }
 
@@ -272,7 +382,7 @@ int patch_slot(void) {
         ".thumb        \n"
         ".hword 0xE7FF \n"
         "nop           \n"
-        "b   fun1      \n");
+        "b     fun1    \n");
 }
 
 memory_cost_t morph_patch_memory_cost(void) {
@@ -280,8 +390,8 @@ memory_cost_t morph_patch_memory_cost(void) {
 
     cost.flash_bytes = (uint32_t)((uintptr_t)&__hotpatch_page_end__
                                 - (uintptr_t)&__hotpatch_page_start__);
-    cost.ram_bytes   = (uint32_t)(sizeof(g_patch_recovery_target)
-                                + sizeof(g_patch_recovery_instr)
-                                + sizeof(g_patch_recovery_pending));
+    cost.ram_bytes = (uint32_t)(sizeof(g_patch_dispatch_target)
+                              + sizeof(g_patch_dispatch_pending)
+                              + sizeof(g_morph_patch_path));
     return cost;
 }

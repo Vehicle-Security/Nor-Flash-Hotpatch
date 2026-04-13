@@ -13,6 +13,7 @@
 #include "../app/app_mode.h"
 #include "../benchmark/benchmark.h"
 #include "../patch/patch_control.h"
+#include "../patch/morph_patch.h"
 #include "../patch/patch_result.h"
 #include "../target/cve_target.h"
 #include "ports/common/platform_port.h"
@@ -54,6 +55,24 @@ bool console_prompt_u32(const char *prompt, uint32_t *out) {
 
 static const char *yes_no(bool value) {
     return value ? "yes" : "no";
+}
+
+static bool parse_patch_path_name(const char *text, morph_patch_path_t *path) {
+    if (text == NULL || path == NULL) {
+        return false;
+    }
+
+    if (strcmp(text, "direct") == 0 || strcmp(text, "branch") == 0) {
+        *path = MORPH_PATCH_PATH_DIRECT;
+        return true;
+    }
+
+    if (strcmp(text, "fault") == 0 || strcmp(text, "exception") == 0) {
+        *path = MORPH_PATCH_PATH_FAULT;
+        return true;
+    }
+
+    return false;
 }
 
 static void print_exec_result(const char *stage, int ret_code) {
@@ -108,7 +127,7 @@ static void run_demo(void) {
 
 void console_print_help(void) {
     console_puts(
-        "commands: help, target, call, patch, unpatch, status, demo, bench\r\n"
+        "commands: help, target, path direct|fault, call, patch, unpatch, status, demo, bench\r\n"
         "target names: cve2024-2212 | cve2025-1674 | cve2025-12899\r\n");
 }
 
@@ -127,6 +146,7 @@ void console_run_startup_smoke_test(void) {
 
 void console_handle_command(const char *cmd) {
     cve_target_t target = CVE_TARGET_CVE2024_2212;
+    morph_patch_path_t path = MORPH_PATCH_PATH_DIRECT;
 
     if (cmd == NULL || cmd[0] == '\0') {
         return;
@@ -176,6 +196,11 @@ void console_handle_command(const char *cmd) {
         return;
     }
 
+    if (strcmp(cmd, "path") == 0) {
+        console_printf("[path] %s\r\n", morph_patch_path_name());
+        return;
+    }
+
     if (strncmp(cmd, "target ", 7) == 0) {
         if (!cve_target_parse_name(cmd + 7, &target)) {
             console_printf("[-] unknown target: %s\r\n", cmd + 7);
@@ -183,6 +208,17 @@ void console_handle_command(const char *cmd) {
         }
         cve_target_set_current(target);
         cve_target_print_status();
+        return;
+    }
+
+    if (strncmp(cmd, "path ", 5) == 0) {
+        if (!parse_patch_path_name(cmd + 5, &path)) {
+            console_printf("[-] unknown path: %s\r\n", cmd + 5);
+            return;
+        }
+        morph_patch_set_path(path);
+        console_printf("[path] switched to %s\r\n", morph_patch_path_name());
+        print_patch_status();
         return;
     }
 

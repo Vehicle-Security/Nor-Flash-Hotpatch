@@ -19,6 +19,8 @@ const char *patch_scheme_name(patch_scheme_t scheme) {
 }
 
 int patch_call(patch_scheme_t scheme) {
+    int result = 0;
+
     if (scheme == PATCH_SCHEME_RAPID) {
         return rapid_patch_slot();
     }
@@ -28,6 +30,14 @@ int patch_call(patch_scheme_t scheme) {
     if (scheme == PATCH_SCHEME_AUTOPATCH) {
         return autopatch_patch_slot();
     }
+
+    if (morph_patch_current_slot_uses_fault_dispatch()) {
+        morph_patch_fault_begin();
+        result = morph_patch_fault_entry();
+        morph_patch_fault_end();
+        return result;
+    }
+
     return patch_slot();
 }
 

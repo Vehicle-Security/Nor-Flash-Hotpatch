@@ -10,6 +10,7 @@ int SEGGER_RTT_vprintf(unsigned BufferIndex, const char *sFormat, va_list *pPara
 #include "core/app/app_mode.h"
 #include "compare/benchmark/benchmark.h"
 #include "compare/patch/patch_control.h"
+#include "core/patch/morph_patch.h"
 #include "core/patch/patch_result.h"
 #include "core/target/cve_target.h"
 
@@ -168,6 +169,24 @@ static const char *yes_no(bool value) {
     return value ? "yes" : "no";
 }
 
+static bool parse_patch_path_name(const char *text, morph_patch_path_t *path) {
+    if (text == NULL || path == NULL) {
+        return false;
+    }
+
+    if (strcmp(text, "direct") == 0 || strcmp(text, "branch") == 0) {
+        *path = MORPH_PATCH_PATH_DIRECT;
+        return true;
+    }
+
+    if (strcmp(text, "fault") == 0 || strcmp(text, "exception") == 0) {
+        *path = MORPH_PATCH_PATH_FAULT;
+        return true;
+    }
+
+    return false;
+}
+
 static bool parse_scheme_name(const char *text, patch_scheme_t *scheme) {
     if (text == NULL || scheme == NULL) {
         return false;
@@ -256,7 +275,7 @@ static void run_demo_for_scheme(patch_scheme_t scheme) {
 
 void console_print_help(void) {
     console_puts(
-        "commands: help, mode morphpatch|rapid|hera|autopatch, "
+        "commands: help, mode morphpatch|rapid|hera|autopatch, path direct|fault, "
         "target cve2024-2212|cve2025-1674|cve2025-12899, demo, bench, compare, call, patch, unpatch, status\r\n");
 }
 
@@ -277,6 +296,7 @@ void console_run_startup_smoke_test(void) {
 void console_handle_command(const char *cmd) {
     patch_scheme_t scheme = PATCH_SCHEME_RAPID;
     cve_target_t target = CVE_TARGET_CVE2024_2212;
+    morph_patch_path_t path = MORPH_PATCH_PATH_DIRECT;
 
     if (cmd == NULL || cmd[0] == '\0') {
         return;
@@ -326,6 +346,11 @@ void console_handle_command(const char *cmd) {
         return;
     }
 
+    if (strcmp(cmd, "path") == 0) {
+        SEGGER_RTT_printf(0, "[path] %s\r\n", morph_patch_path_name());
+        return;
+    }
+
     if (strcmp(cmd, "target") == 0) {
         cve_target_print_status();
         return;
@@ -338,6 +363,17 @@ void console_handle_command(const char *cmd) {
         }
         g_current_scheme = scheme;
         print_mode_line();
+        return;
+    }
+
+    if (strncmp(cmd, "path ", 5) == 0) {
+        if (!parse_patch_path_name(cmd + 5, &path)) {
+            SEGGER_RTT_printf(0, "[-] unknown path: %s\r\n", cmd + 5);
+            return;
+        }
+        morph_patch_set_path(path);
+        SEGGER_RTT_printf(0, "[path] switched to %s\r\n", morph_patch_path_name());
+        print_patch_status(PATCH_SCHEME_LEGACY);
         return;
     }
 

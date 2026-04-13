@@ -8,6 +8,15 @@ const char *patch_scheme_name(void) {
 }
 
 int patch_call(void) {
+    int result = 0;
+
+    if (morph_patch_current_slot_uses_fault_dispatch()) {
+        morph_patch_fault_begin();
+        result = platform_patch_call(morph_patch_fault_entry);
+        morph_patch_fault_end();
+        return result;
+    }
+
     return platform_patch_call(patch_slot);
 }
 

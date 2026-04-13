@@ -7,13 +7,29 @@ and **without halting the running firmware**.
 
 ## How It Works
 
-A patch slot is pre-filled with `0xE7FF` (Thumb: `B .`, an infinite-loop opcode where
-every data bit is 1). At patch time, selected bits are cleared to form a 16-bit Thumb
-branch instruction that jumps to the fix function. Because only 1-to-0 transitions are
-needed, the write completes in a single NOR flash word-program operation with no erase.
+MorphPatch now supports two monotonic dispatch paths from the same factory slot:
 
-The patch includes write-verify-retry logic and a HardFault recovery handler that
-redirects execution to the fix function even if the flash write fails.
+- `direct-branch` path: `0xE7FF -> Thumb B(fun2) -> 0xE000`
+- `fault-dispatch` path: `0xE7FF -> 0x4700 -> 0x4600`
+
+`0xE7FF` remains the factory image. It falls through to the original `fun1` path.
+The original direct-branch path is preserved and remains the default option.
+
+The fault-dispatch path clears the first halfword to `0x4700` (`BX R0`). Its
+entry wrapper saves the caller's original `R0` in `R12`, forces `R0 = 0`, and
+enters `patch_slot`. That makes `BX R0` raise a controlled exception instead of
+branching into arbitrary code. The exception handler restores stacked `R0` from
+stacked `R12`, then redirects execution to the fix function. Unpatch clears one
+more bit from `0x4700` to `0x4600`, restoring the original path without erase.
+
+You can switch the MorphPatch path at runtime with `path direct` or `path fault`
+before applying the patch.
+
+- `path direct`: prefer the original `0xE7FF -> B(fun2) -> 0xE000` path. If the
+  direct branch write fails, MorphPatch retries once. If it still cannot be
+  programmed monotonically, the install logic automatically falls back to the
+  `fault-dispatch` path as a backup without changing the user-selected mode.
+- `path fault`: force the `0xE7FF -> 0x4700 -> 0x4600` path from the start.
 
 ## Repository Structure
 
@@ -56,6 +72,8 @@ Connect to the RTT console with **SEGGER RTT Viewer** (device: nRF52840_xxAA, SW
 
 ```text
 help        Show available commands
+path        Show current MorphPatch path
+path <x>    Switch path: direct | fault
 status      Print current patch state
 patch       Apply the MorphPatch
 unpatch     Remove the patch (clear-forward)
@@ -101,7 +119,7 @@ The `compare` environment benchmarks four hotpatch techniques under identical co
 
 | Scheme | Mechanism | Trigger | Dispatch |
 |---|---|---|---|
-| **MorphPatch** | NOR flash bit-clear | Hardware (flash read) | None (inline branch) |
+| **MorphPatch** | NOR flash bit-clear | Hardware (`B fun2` or exception on `BX R0`) | Inline branch or exception redirect |
 | **RapidPatch** | Fixed patch point + bytecode VM | Software (function entry) | Linear scan |
 | **HERA** | ARM FPB hardware breakpoint | Hardware (FPB remap) | RAM function pointer |
 | **AutoPatch** | Static trampoline + binary search | Software (call site) | Binary search |
