@@ -1,0 +1,4 @@
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_160=y
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+# Allow writing to flash regions that overlap running app (required for hotpatching)
+CONFIG_SPI_FLASH_DANGEROUS_WRITE_ALLOWED=y

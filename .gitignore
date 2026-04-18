@@ -29,6 +29,17 @@ scripts/
 
 # Backup directories
 .codex_backup/
+backup/
+
+# Research notes (kept locally, not shipped)
+docs/
+
+# Benchmark outputs
+results/
+
+# Runtime logs from on-target debuggers
+openocd_rtt_*.log
+*.rtt.log
 
 # Archives
 *.zip

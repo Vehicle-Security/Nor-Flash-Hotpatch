@@ -245,12 +245,12 @@ void console_print_status(void)
     cve_target_print_status();
     print_patch_status();
 
-    if (cve_target_get_current() == CVE_TARGET_CVE2024_2212) {
-        const patch_scheme_ops_t *scheme = patch_scheme_cve2024_2212_direct();
+    {
+        const patch_scheme_ops_t *erase_scheme = patch_scheme_erase();
 
-        if ((scheme != NULL) && (scheme->print_status != NULL)) {
-            console_printf("[scheme-2212] %s\r\n", scheme->name);
-            scheme->print_status();
+        if ((erase_scheme != NULL) && (erase_scheme->print_status != NULL)) {
+            console_printf("[scheme-erase] %s\r\n", erase_scheme->name);
+            erase_scheme->print_status();
         }
     }
 }

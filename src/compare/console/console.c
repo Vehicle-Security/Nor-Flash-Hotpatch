@@ -307,6 +307,16 @@ void console_handle_command(const char *cmd) {
         return;
     }
 
+    if (strcmp(cmd, "erasebench") == 0) {
+        extern void inline_hook_erase_bench(void) __attribute__((weak));
+        if (inline_hook_erase_bench) {
+            inline_hook_erase_bench();
+        } else {
+            console_puts("[-] erasebench not supported on this target.\r\n");
+        }
+        return;
+    }
+
     if (strcmp(cmd, "demo") == 0) {
         run_demo_for_scheme(g_current_scheme);
         return;

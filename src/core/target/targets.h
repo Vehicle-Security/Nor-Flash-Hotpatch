@@ -3,5 +3,6 @@
 
 int fun1(void);
 int fun2(void);
+int patch_slot_erase(void);
 
 #endif

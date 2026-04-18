@@ -1,0 +1,33 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "board_port.c"
+        "cycle_counter.c"
+        "patch_control.c"
+        "patch_control_erase.c"
+        "patch_stubs.S"
+        "cve_target.c"
+        "cve2024_2212.c"
+        "cve2025_1674.c"
+        "cve2025_12899.c"
+        "vuln_fun.c"
+        "patch_fun.c"
+        "benchmark.c"
+        "console.c"
+        "app_mode.c"
+        "patch_result.c"
+        "queue_demo.c"
+    INCLUDE_DIRS
+        "../include"
+    REQUIRES
+        app_update
+        esp_partition
+        spi_flash
+        driver
+        esp_driver_uart
+)
+
+# Override the dangerous-write protection so we can hotpatch the running flash.
+idf_build_set_property(COMPILE_OPTIONS
+    "-UCONFIG_SPI_FLASH_DANGEROUS_WRITE_ABORTS;-DCONFIG_SPI_FLASH_DANGEROUS_WRITE_ALLOWED=1"
+    APPEND)

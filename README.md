@@ -58,7 +58,7 @@ All ARM targets are built from the root `platformio.ini`. Install
 | `pio run -e nuttx` | MorphPatch on NuttX |
 | `pio run -e compare` | Benchmark all four hotpatch schemes |
 | `pio run -e realworld` | LED demo, bare metal |
-| `pio run -e realworld_freertos` | LED demo, FreeRTOS (press S1 to apply patch live) |
+| `pio run -e realworld_freertos` | LED demo, FreeRTOS (press S1 to apply, press again to unpatch) |
 
 Upload to the board:
 
@@ -103,15 +103,30 @@ pio run -t upload          # flash via WCH-Link
 It uses the same monotonic bit-clear strategy but operates on 32-bit RISC-V branch
 instructions (BEQ) with three states instead of the ARM 16-bit Thumb encoding.
 
+## Additional Ports
+
+Standalone PlatformIO projects for other MCUs live alongside `targets/ch32v203/`
+and follow the same `cd <target> && pio run` workflow:
+
+| Path | MCU | Toolchain |
+|---|---|---|
+| `targets/stm32f4/` | STM32F411CE (Cortex-M4) | `platform=ststm32`, ST-Link |
+| `targets/esp32c3/` | ESP32-C3 (RISC-V) | `platform=espressif32`, ESP-IDF |
+| `targets/esp32s3/` | ESP32-S3 (Xtensa LX7) | `platform=espressif32`, ESP-IDF |
+
+Each port reuses the shared `src/core/` and `src/compare/` sources and only
+provides its own flash HAL, linker script, and console plumbing.
+
 ## Real-World LED Demo
 
 The `realworld_freertos` target demonstrates live hotpatching on the nRF52840 DK:
 
-1. After flashing, **LED1 blinks** at 250 ms intervals (the "victim" task).
+1. After flashing, **LED1 blinks** at 10 ms intervals (the "victim" task).
 2. Press **Button S1** to apply the MorphPatch at runtime.
 3. **LED2 turns on** (patched path active) while **LED1 continues blinking** uninterrupted.
+4. Press **Button S1** again to clear-forward unpatch the slot. **LED2 turns off** on the next victim tick, and a third patch attempt requires reflashing because NOR flash only supports monotonic 1-to-0 writes.
 
-RTT output confirms the patch was applied without stopping the victim task.
+RTT output confirms the patch/unpatch cycle completed without stopping the victim task.
 
 ## Comparison Framework
 

@@ -10,6 +10,7 @@ enum {
 };
 
 static bool g_primary_led_on = false;
+static bool g_patch_led_on = false;
 
 static int led_demo_step(bool patch_active) {
     g_primary_led_on = !g_primary_led_on;
@@ -26,11 +27,14 @@ static int led_demo_step(bool patch_active) {
         bsp_board_led_off(LED_DEMO_PATCH_LED);
     }
 
+    g_patch_led_on = patch_active;
+
     return patch_active ? 1 : 0;
 }
 
 void led_demo_init(void) {
     g_primary_led_on = false;
+    g_patch_led_on = false;
     bsp_board_led_off(LED_DEMO_PRIMARY_LED);
     bsp_board_led_off(LED_DEMO_PATCH_LED);
     bsp_board_led_off(BSP_BOARD_LED_2);
@@ -43,4 +47,12 @@ int led_demo_run_unpatched(void) {
 
 int led_demo_run_patched(void) {
     return led_demo_step(true);
+}
+
+bool led_demo_primary_led_is_on(void) {
+    return g_primary_led_on;
+}
+
+bool led_demo_patch_led_is_on(void) {
+    return g_patch_led_on;
 }

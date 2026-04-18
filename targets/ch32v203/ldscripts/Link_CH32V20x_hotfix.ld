@@ -101,13 +101,13 @@ SECTIONS
 		. = ALIGN(4);
 	} >FLASH AT>FLASH
 
-	.patchslot_2212 :
+	.patchslot_erase :
 	{
 		. = ALIGN(4096);
-		PROVIDE(__patchslot_2212_start = .);
-		KEEP(*(.patchslot_2212))
-		. = __patchslot_2212_start + 0x1000;
-		PROVIDE(__patchslot_2212_end = .);
+		PROVIDE(__patchslot_erase_start = .);
+		KEEP(*(.patchslot_erase))
+		. = __patchslot_erase_start + 0x1000;
+		PROVIDE(__patchslot_erase_end = .);
 	} >FLASH AT>FLASH =0xFF
 
 	.fini :

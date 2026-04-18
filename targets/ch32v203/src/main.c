@@ -10,11 +10,9 @@
 volatile patch_txn_benchmark_result_t g_autobench_result;
 volatile uint32_t g_autobench_done = 0u;
 volatile uint32_t g_autobench_target = 0u;
-#if defined(APP_AUTOBENCH_COMPARE_2212)
 volatile patch_txn_benchmark_result_t g_autobench_compare_morph_result;
-volatile patch_txn_benchmark_result_t g_autobench_compare_erase_jump_result;
+volatile patch_txn_benchmark_result_t g_autobench_compare_erase_result;
 volatile uint32_t g_autobench_compare_done = 0u;
-#endif
 #endif
 
 int main(void)
@@ -33,15 +31,10 @@ int main(void)
 #if defined(APP_AUTOBENCH_TARGET)
     cve_target_set_current((cve_target_t)(APP_AUTOBENCH_TARGET));
     g_autobench_target = (uint32_t)cve_target_get_current();
-#if defined(APP_AUTOBENCH_COMPARE_2212)
-    if (cve_target_get_current() == CVE_TARGET_CVE2024_2212) {
-        if (benchmark_compare_run((patch_txn_benchmark_result_t *)&g_autobench_compare_morph_result,
-                                  (patch_txn_benchmark_result_t *)&g_autobench_compare_erase_jump_result)) {
-            g_autobench_compare_done = 1u;
-        }
-    } else {
-        g_autobench_result = benchmark_run();
-        g_autobench_done = 1u;
+#if defined(APP_AUTOBENCH_COMPARE)
+    if (benchmark_compare_run((patch_txn_benchmark_result_t *)&g_autobench_compare_morph_result,
+                              (patch_txn_benchmark_result_t *)&g_autobench_compare_erase_result)) {
+        g_autobench_compare_done = 1u;
     }
 #else
     g_autobench_result = benchmark_run();
