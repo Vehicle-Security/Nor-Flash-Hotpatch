@@ -123,21 +123,15 @@ The RISC-V ports use the same monotonic bit-clear strategy but operate on
 32-bit RISC-V branch instructions (`BEQ`) with three states instead of the
 ARM 16-bit Thumb encoding.
 
-## Real-World LED Demo
+## Real-time Task Demo
 
-The `realworld_freertos` target demonstrates live hotpatching on the
-nRF52840 DK without halting running tasks:
+The `realworld_freertos` target demonstrates **online hotpatching under concurrent real-time execution** on the nRF52840 DK.
 
-1. After flashing, **LED1 blinks** at 10 ms (the victim task).
-2. Press **button S1** to apply MorphPatch at runtime.
-3. **LED2 turns on** (patched path active) while **LED1 keeps blinking
-   uninterrupted**.
-4. Press **S1** again to clear-forward unpatch the slot. **LED2 turns off**
-   on the next victim tick. A third patch attempt requires reflashing
-   because NOR flash only supports monotonic 1-to-0 writes.
+In this demo, a periodic victim task runs continuously with a **10 ms period**, while a separate patch-manager task installs and removes MorphPatch at runtime. Press **S1** once to apply the patch online, and press **S1** again to remove it. Throughout the entire process, the victim task continues executing normally, with **no reboot, no stop-the-world phase, and no visible stall** during patch installation, patched execution, or patch removal.
 
-RTT output confirms the patch / unpatch cycle completed without stopping
-the victim task.
+RTT logs confirm that the patch / unpatch cycle completes successfully **without suspending or halting the running task**. This demo is intended to show that MorphPatch supports **real-time hotpatching on a live system**, rather than merely switching between two code paths.
+
+> Note: because the patch slot in NOR Flash only supports monotonic **1→0** state transitions, a third patch attempt requires reflashing.
 
 ## Comparison Framework
 
