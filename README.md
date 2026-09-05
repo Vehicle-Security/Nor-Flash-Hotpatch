@@ -1,17 +1,17 @@
-# MorphPatch — NOR-Flash Hotpatching for Embedded Systems
+# TransBit — NOR-Flash Hotpatching for Embedded Systems
 
-MorphPatch is a runtime hotpatching technique for microcontrollers with NOR
+TransBit is a runtime hotpatching technique for microcontrollers with NOR
 flash. It exploits the monotonic **1-to-0** bit-clear property of NOR flash to
 redirect execution from a vulnerable function to a patched replacement
 **without erasing any flash sector** and **without halting the running
 firmware**. The framework ships with ports for bare metal and five RTOSes,
 five MCU targets across ARM Cortex-M, RISC-V and Xtensa, three real CVE
-workloads, and a comparison harness that benchmarks MorphPatch against
+workloads, and a comparison harness that benchmarks TransBit against
 RapidPatch, HERA and AutoPatch under identical conditions.
 
 ## How It Works
 
-MorphPatch reserves a tiny factory slot at every protected function entry.
+TransBit reserves a tiny factory slot at every protected function entry.
 The slot starts as `0xE7FF` (a Thumb branch to the next instruction — a
 1-cycle NOP that falls through to the original body). Two monotonic
 dispatch paths can then be armed at runtime from that same slot:
@@ -21,7 +21,7 @@ dispatch paths can then be armed at runtime from that same slot:
 
 The direct path rewrites the halfword to an in-range Thumb branch to the
 replacement function. When the target is out of range or a bit cannot be
-cleared monotonically, MorphPatch falls back to the fault-dispatch path:
+cleared monotonically, TransBit falls back to the fault-dispatch path:
 `0x4700` (`BX R0`) triggers a controlled exception, the handler restores
 the caller's R0 from the stacked R12 shadow, and redirects execution to
 the fix function. Unpatch clears one more bit to `0x4600`, restoring the
@@ -42,8 +42,8 @@ Switch the dispatch path from the RTT console before applying a patch:
 
 ```text
 src/
-  core/            MorphPatch core: patch dispatch, app, console, CVE targets
-  compare/         Multi-scheme harness: MorphPatch vs RapidPatch / HERA / AutoPatch
+  core/            TransBit core: patch dispatch, app, console, CVE targets
+  compare/         Multi-scheme harness: TransBit vs RapidPatch / HERA / AutoPatch
   realworld/       LED demo — live hotpatch while a FreeRTOS task keeps blinking
   overhead_bench/  DWT cycle-count harness for RTOS instrumentation overhead
 ports/
@@ -73,11 +73,11 @@ All ARM targets build from the root `platformio.ini`. Install
 
 | Command | Description |
 |---|---|
-| `pio run -e baremetal` | MorphPatch on bare metal (baseline) |
-| `pio run -e benchcmp` | MorphPatch vs erase-rewrite, bare metal |
-| `pio run -e freertos` | MorphPatch on FreeRTOS |
-| `pio run -e liteos` | MorphPatch on LiteOS |
-| `pio run -e nuttx` | MorphPatch on NuttX |
+| `pio run -e baremetal` | TransBit on bare metal (baseline) |
+| `pio run -e benchcmp` | TransBit vs erase-rewrite, bare metal |
+| `pio run -e freertos` | TransBit on FreeRTOS |
+| `pio run -e liteos` | TransBit on LiteOS |
+| `pio run -e nuttx` | TransBit on NuttX |
 | `pio run -e compare` | Benchmark all four hotpatch schemes |
 | `pio run -e realworld` | LED demo, bare metal |
 | `pio run -e realworld_freertos` | LED demo, FreeRTOS (S1 applies / re-press unpatches) |
@@ -89,10 +89,10 @@ Flash with `pio run -e <env> -t upload`. Open the RTT console with
 
 ```text
 help          Show available commands
-path          Show current MorphPatch path
+path          Show current TransBit path
 path <x>      Switch path: direct | fault
 status        Print current patch state
-patch         Apply the MorphPatch
+patch         Apply the TransBit
 unpatch       Remove the patch (clear-forward)
 call          Execute the patch slot (vulnerable or fixed path)
 demo          Run a full patch / unpatch / call cycle
@@ -103,7 +103,7 @@ target <x>    Switch CVE target: cve2024-2212 | cve2025-1674 | cve2025-12899
 The `compare` environment adds:
 
 ```text
-mode <scheme> Switch scheme: morphpatch | rapid | hera | autopatch
+mode <scheme> Switch scheme: TransBit | rapid | hera | autopatch
 compare       Run benchmarks for all four schemes and print a table
 ```
 
@@ -127,9 +127,9 @@ ARM 16-bit Thumb encoding.
 
 The `realworld_freertos` target demonstrates **online hotpatching under concurrent real-time execution** on the nRF52840 DK.
 
-In this demo, a periodic victim task runs continuously with a **10 ms period**, while a separate patch-manager task installs and removes MorphPatch at runtime. Press **S1** once to apply the patch online, and press **S1** again to remove it. Throughout the entire process, the victim task continues executing normally, with **no reboot, no stop-the-world phase, and no visible stall** during patch installation, patched execution, or patch removal.
+In this demo, a periodic victim task runs continuously with a **10 ms period**, while a separate patch-manager task installs and removes TransBit at runtime. Press **S1** once to apply the patch online, and press **S1** again to remove it. Throughout the entire process, the victim task continues executing normally, with **no reboot, no stop-the-world phase, and no visible stall** during patch installation, patched execution, or patch removal.
 
-RTT logs confirm that the patch / unpatch cycle completes successfully **without suspending or halting the running task**. This demo is intended to show that MorphPatch supports **real-time hotpatching on a live system**, rather than merely switching between two code paths.
+RTT logs confirm that the patch / unpatch cycle completes successfully **without suspending or halting the running task**. This demo is intended to show that TransBit supports **real-time hotpatching on a live system**, rather than merely switching between two code paths.
 
 > Note: because the patch slot in NOR Flash only supports monotonic **1→0** state transitions, a third patch attempt requires reflashing.
 
@@ -140,7 +140,7 @@ identical conditions on the same CVE target.
 
 | Scheme | Mechanism | Trigger | Dispatch |
 |---|---|---|---|
-| **MorphPatch** | NOR flash bit-clear | Hardware (`B fun2` or exception on `BX R0`) | Inline branch or exception redirect |
+| **TransBit** | NOR flash bit-clear | Hardware (`B fun2` or exception on `BX R0`) | Inline branch or exception redirect |
 | **RapidPatch** | Fixed patch point + bytecode VM | Software (function entry) | Linear scan |
 | **HERA** | ARM FPB hardware breakpoint | Hardware (FPB remap) | RAM function pointer |
 | **AutoPatch** | Static trampoline + binary search | Software (call site) | Binary search |
@@ -161,7 +161,7 @@ FreeRTOS kernel (see `results/summary_results.md`):
 | Baseline | — | — | 0 |
 | RapidPatch | +892 B (+8.0%) | +10.4 | 4–6 |
 | AutoPatch | +884 B (+7.9%) | +10.4 | 4–6 |
-| **MorphPatch** | **+180 B (+1.6%)** | **+1.8** | **2** |
+| **TransBit** | **+180 B (+1.6%)** | **+1.8** | **2** |
 
 The accompanying scripts under `scripts/` automate source instrumentation
 (`instrument_all_functions.py`), static analysis (`analyze_overhead.py`),
@@ -184,5 +184,5 @@ and board runs (`run_overhead_bench.ps1`, `run_compare_matrix.ps1`).
 ## License
 
 See individual vendor directories for third-party license terms. Core
-MorphPatch sources under `src/` and `ports/` are released for research and
+TransBit sources under `src/` and `ports/` are released for research and
 educational use; consult each file header for specifics.
